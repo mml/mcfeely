@@ -5,14 +5,15 @@ PROJECT	= mcfeely
 SOURCES	= attempt_tasks.pl do_select.pl files.pl jobs.pl log.pl \
 	  mcfeely-manage mcfeely-queue.c mcfeely.h \
 	  read_results.pl safe_to_exit.pl tasks.pl hostport.c hostport.h \
-	  mcfeely-ttpc.c exit-codes.h make-mcfeely-pm.c
+	  mcfeely-ttpc.c exit-codes.h make-mcfeely-pm.c make-chdir-pl.c \
+	  make-internal-pm.c
 
 OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	  copy_bytes.o safe_read.o safe_write.o mcfeely-ttpc.o hostport.o \
-	  make-mcfeely-pm.o mcfeely-ttpd.o make-chdir-pl.o
+	  make-mcfeely-pm.o mcfeely-ttpd.o make-chdir-pl.o make-internal-pm.o
 
 TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
-	  McFeely.pm topdir mcfeely.h make-chdir-pl chdir.pl
+	  McFeely.pm topdir mcfeely.h chdir.pl Internal.pm
 
 ROOTUSER = $(shell cat ROOTUSER)
 MCUSER   = $(shell cat MCUSER)
@@ -55,7 +56,7 @@ FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva/RPMS/i386
 all: $(TARGETS)
 
 install: all PERLDIR
-	for i in '' /bin /comm /control; do \
+	for i in '' /bin /comm /control /lib /lib/perl; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0755 -d `./topdir`$$i ;\
 	done
 
@@ -72,12 +73,17 @@ install: all PERLDIR
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0440 McFeely.pm `cat PERLDIR`
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0750 -d `cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm; do \
+	for i in Internal.pm Job.pm Task.pm Metatask.pm; do \
 		install -o $(ROOTUSER) -g $(QGROUP) -m 0440 $$i `cat PERLDIR`/McFeely ;\
 	done
 
+	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
+	  do_selec.tpl jobs.pl read_results.pl tasks.pl; do \
+		install -o $(ROOTUSER) -g $(MCGROUP) -m 0644 $$i `./topdir`/lib/perl; \
+	done
+
 rpminstall: all PERLDIR
-	for i in '' /bin /comm /control; do \
+	for i in '' /bin /comm /control /lib /lib/perl; do \
 		install -m 0755 -d $(ROOT)/`./topdir`$$i ;\
 	done
 
@@ -97,8 +103,13 @@ rpminstall: all PERLDIR
 	install -m 0440 McFeely.pm $(ROOT)/`cat PERLDIR`
 	install -m 0750 -d $(ROOT)/`cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm; do \
+	for i in Internal.pm Job.pm Task.pm Metatask.pm; do \
 		install -m 0440 $$i $(ROOT)/`cat PERLDIR`/McFeely ;\
+	done
+
+	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
+	  do_selec.tpl jobs.pl read_results.pl tasks.pl; do \
+		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
 	done
 
 dist: $(TARFILE)
@@ -164,6 +175,11 @@ make-chdir-pl.o: mcfeely.h
 
 chdir.pl: make-chdir-pl
 	./make-chdir-pl > chdir.pl
+
+make-internal-pm.o: mcfeely.h
+
+Internal.pm: make-internal-pm
+	./make-internal-pm > Internal.pm
 
 topdir.o: mcfeely.h
 
