@@ -33,6 +33,18 @@ sub mail_report($$) {
     my $failed = shift;
     my $whom;
     my $subject;
+    my $desc;
+
+    # get the description for use in the message
+    open DESC, "desc/$job" or do {
+        plog "Could not open desc/$job: $!";
+        return;
+    };
+    while (defined($_ = <DESC>)) {
+        chomp;
+        $desc .= "$_ ";
+    }
+    close DESC;
 
     # figure out if we are failing or succeeding and produce 
     if (! $failed) {
@@ -55,6 +67,9 @@ sub mail_report($$) {
         close FNOT;
     }
 
+    # add the desc to the subject
+    $subject .= ":  $desc";
+
     # get our mailer XXX
     # this should be abstracted out to a mail function so we
     # don't have to rely on /bin/mail
@@ -66,19 +81,12 @@ sub mail_report($$) {
         return;
     };
 
-    # get the desc text
-    open DESC, "desc/$job" or do {
-        plog "Could not open desc/$job: $!";
-        return;
-    };
-
     # print the message
-    print MAIL <DESC>;
-    print MAIL "\n\n";
+    print MAIL "job $job report:\n";
     print MAIL <REP>;
+    print MAIL "\nDescription:\n$desc";
 
     close REP;
-    close DESC;
     close MAIL;
 }
 
