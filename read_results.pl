@@ -138,7 +138,9 @@ sub read_results() {
     $task = task_lookup $num;
     --$Tasks_in_progress;
 
-    if ($code eq $TASK_SUCCESS_CODE) {
+    return unless defined $code;
+
+    if ($code == $TASK_SUCCESS_CODE) {
         my $job = $task->[$TASK_JOB];
 
         plog "$job->[$JOB_INO]:$num success: $msg";
@@ -148,7 +150,7 @@ sub read_results() {
         decrement_waiters $task;
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
-    } elsif ($code eq $TASK_DEFERRAL_CODE) {
+    } elsif ($code == $TASK_DEFERRAL_CODE) {
         my $job = $task->[$TASK_JOB];
 
         plog "$job->[$JOB_INO]:$num deferral: $msg";
@@ -158,7 +160,7 @@ sub read_results() {
               ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
                + 5) ** 2;
         task_enqueue $task;
-    } elsif ($code eq $TASK_FAILURE_CODE) {
+    } elsif ($code == $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
 
         plog "$job->[$JOB_INO]:$num failure: $msg";
