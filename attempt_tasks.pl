@@ -22,7 +22,18 @@
 sub write_to_spawner($) {
     my $ino = shift;
 
-    $siw->print("$ino\n");
+    my $buf = "$ino\n";
+    my $length = length $buf;
+    my $count;
+
+    $count = $siw->syswrite($buf, $length);
+    if ((!defined($count)) or ($count != $length)) {
+        return 0;
+    }
+    return 1;
+#    $siw->print("$ino\n") && return 1;
+#    $siw->printflush("$ino\n") && return 1;
+#    return 0;
 }
 
 # attempt all tasks whose times have come
@@ -51,9 +62,22 @@ sub attempt_tasks() {
             plog "$task->[$TASK_JOB]->[$JOB_INO]:$task->[$TASK_INO] " .
                  "($task->[$TASK_COMM]) starting transfer to " .
                  "$task->[$TASK_HOST]";
-            write_to_spawner $task->[$TASK_INO];
-            $task->[$TASK_NEXT_TRY] = $now;
-            ++$Tasks_in_progress;
+
+            # totally guessing here on this, what we are after
+            # is if the write to the pipe fails we wanna do it
+            # again later cjd 2000.0623
+            if (write_to_spawner $task->[$TASK_INO]) {
+                $task->[$TASK_NEXT_TRY] = $now;
+                ++$Tasks_in_progress;
+            } else {
+                plog "$task->[$TASK_JOB]->[$JOB_INO]:$task->[$TASK_INO] " .
+                 "($task->[$TASK_COMM]) writing_to_spawner failed " .
+                 "$!";
+                # push the task back on this to look at later
+                #push @ntasks, $task;
+                push @ntasks, @Tasks[$i..$#Tasks];
+                last TASK;
+            }
         }
     }
 

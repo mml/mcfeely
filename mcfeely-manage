@@ -82,11 +82,12 @@ plog("exiting");
 
 # we've lost the spawner, that's not supposed to 
 # happen
-# XXX: if this happens mcfeely is going to quite and supervise
+# XXX: if this happens mcfeely is going to quit and supervise
 # XXX: we'll start it back up again. we don't want that. 
 # XXX: perhaps just run without supervise? or supervise -o
 sub reaper  {
     plog("mcfeely-spawn has died for unknown reasons");
+    wait();
     plog("queue status unreliable");
     plog("Tasks in progress: $Tasks_in_progress");
     $Tasks_in_progress = 0;

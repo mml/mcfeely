@@ -44,7 +44,7 @@ my $pipe2 = new IO::Pipe($srr, $srw);
 # this is probably redundant
 $srr->blocking(0);
 $siw->blocking(0);
-$srw->blocking(0);
+$srw->blocking(1);
 $sir->blocking(0);
 
 my $pid = fork();

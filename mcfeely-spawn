@@ -31,7 +31,6 @@ use Fcntl;
 use Symbol;
 
 require 'chdir.pl';
-require 'log.pl';
 
 # get the file descriptors off the command line
 my $in  = shift;
@@ -76,7 +75,7 @@ sub soft {
     my $slot   = shift;
     my $status = 99;
     
-    hardsoft_error $slot, $status, @_;
+    hardsoft_error($slot, $status, @_);
 }
 
 sub hard {
@@ -110,21 +109,29 @@ sub launch_ttpc {
         return($ino, undef);
     } elsif ($pid == 0) {
         # I am the child.
-        open STDIN, "queue/task/$ino"
-            or soft $ino, "trouble opening queue/task/$ino: $!";
+        unless(open STDIN, "queue/task/$ino") {
+            print STDOUT "trouble opening queue/task/$ino: $!";
+            exit 100;
+        }
+            #or soft $ino, "trouble opening queue/task/$ino: $!";
         #open(STDOUT, ">&main::WP')
         # getting this next bit to work for some reason 
         # requires the fileno, not the handle don't know why
         my $write_pipe_no = $write_pipe->fileno();
-        open(STDOUT, ">& $write_pipe_no")
-            or soft $ino, "trouble duping STDOUT: $!";
+        unless(open(STDOUT, ">& $write_pipe_no")) {
+            print STDOUT "trouble duping STDOUT: $!";
+            exit 99;
+        }
+            #or soft $ino, "trouble duping STDOUT: $!";
         close STDERR;
         #open(STDERR, '>&main::WP')
         #    or soft "trouble duping STDERR: $!";
 
         # start our client with the task number identifier
-        exec 'bin/mcfeely-ttpc', $ino or
-            soft $ino, "Couldn't exec tcpclient: $!";
+        unless (exec 'bin/mcfeely-ttpc', $ino) {
+            print STDOUT "Couldn't exec tcpclient: $!";
+            exit 99;
+        }
     } else {
         # I am the parent.
         # close WP, my child is going to write on it not me.
@@ -203,6 +210,9 @@ sub doit {
             my $read_pipe  = new IO::Handle;
             $write_pipe = new IO::Handle;
             my $pipe1   = new IO::Pipe($read_pipe, $write_pipe);
+            if (!defined($pipe1)) {
+                soft 0, "unable to creat pipe: $!";
+            }
 
             # keep track of children
             sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
