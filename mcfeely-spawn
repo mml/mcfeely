@@ -8,7 +8,7 @@ $| = 1;
 chdir '/home/mliggett/mcfeely-test' or bail("cannot chdir: $!");
 
 &init;
-&doit(\&launch_ttpc, \&pack_task_result);
+&doit(\&launch_ttpc, \&pack_result);
 
 sub launch_ttpc {
 	my $ino = shift;
@@ -25,8 +25,14 @@ sub launch_ttpc {
 		close STDERR;
 		#open(STDERR, '>&main::WP')
 		#	or soft "trouble duping STDERR: $!";
-		exec 'bin/mcfeely-ttpc' or soft "Couldn't exec tcpclient: $!";
+		exec 'bin/mcfeely-ttpc', $ino or soft "Couldn't exec tcpclient: $!";
 	} else {
 		return($ino, $pid);
 	}
+}
+
+sub pack_result {
+    my %args = @_;
+
+    pack 'Lca', $args{slot}, $args{status}, $args{msg};
 }
