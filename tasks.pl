@@ -49,7 +49,14 @@ sub task_new_task_from_file($) {
 sub task_insert($) {
     my $task = shift;
 
-    $Task[$task->[$TASK_INO]] = $task;
+    $Task{$task->[$TASK_INO]} = $task;
+}
+
+# lookup a task in the hash table
+sub task_lookup($) {
+    my $ino = shift;
+
+    $Task{$ino};
 }
     
 # insert a task into a priority queue
