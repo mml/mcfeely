@@ -175,7 +175,8 @@ sub defunct_waiters($) {
             $task->[$TASK_DEFUNCT] = 1;
             --$job->[$JOB_NTASKS];
             report $job->[$JOB_INO],
-	        "task $task->[$TASK_INO] to $task->[$TASK_HOST]: ",
+	        "task $task->[$TASK_INO] ($task->[$TASK_COMM]) ",
+            "to $task->[$TASK_HOST]: ",
 	        "defuncted due to failure of dependent task";
         }
     } $_[0], -1;
@@ -279,6 +280,18 @@ sub read_results() {
             plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: $msg";
             report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
                                  "to $task->[$TASK_HOST]: failure: $msg";
+            defunct_waiters $task;
+            $job->[$JOB_FAILED] = 1;
+            finish_job $job if ($job->[$JOB_NTASKS] == 0);
+        } else {
+            # something really unexpected happened
+            my $job = $task->[$TASK_JOB];
+
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: ",
+                 "unknown code $code with $msg";
+            report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+                                 "to $task->[$TASK_HOST]: failure: ",
+                                 "unknown code $code with $msg";
             defunct_waiters $task;
             $job->[$JOB_FAILED] = 1;
             finish_job $job if ($job->[$JOB_NTASKS] == 0);

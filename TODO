@@ -1,6 +1,7 @@
-
-o when a task fails if there are dependencies make sure the report
-  includes the name of the comm
+o if mcfeely-queue is sent >4096 bytes the pipe between
+  McFeely::Job and mcfeely-queue has a problem and a broken pipe
+  error happens. It's not immediately clear if this is a problem
+  in mcfeely-queue or in McFeely::Job::enqueue
 o mv the files in /opt/mcfeely/lib/perl into the mcfeely-server
   rpm since they are only used by mcfeely-server. this poses
   some weird directory conflict issues with mcfeely-common though.
@@ -31,14 +32,7 @@ Stuff in here prior to May 15, 2000
 o post-tape-recovery queue fixer
 o make sure we're really writing to file every time we think we are
 o firewall stuff
-o improve report readibility (some changes made, but there's room for
-  more)
 o abstract the mailing in mail_report so it is not dependendent on
   /bin/mail but instead uses something like Mail::Send or whatever
-o in mcfeely-ttpd.c a write is made to the the pipe when 'program not
-  found'. It doesn't say what program. It should.
-o BUG: If the client side does not return any exit code at all, the
-  server side seems to get confused, neither reporting the problem,
-  trying again, or failing the task.
 
 

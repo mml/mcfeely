@@ -56,6 +56,7 @@ my $select;
 
 # a buffer for data from mcfeely-manage
 my $Manage_read_buffer;
+my $Tasks_done = 0;
 
 # hashes for holding information about our children
 my %Tasknum;       # the tasknumber
@@ -158,7 +159,7 @@ while (1) {
     }
 
 
-    # make sure this is an empty lis
+    # make sure this is an empty list
     # we'll be looping on it in moments.
     @lines = ();
 
@@ -166,16 +167,26 @@ while (1) {
     # that this is a shorter faster loop than the way it was done
     # before
     if (length($stage) != 0) {
-        my $task_input_counter = 0;
-        while (length($stage) != 0 &&
-                $task_input_counter++ < $Tasks_per_select) {
-            last if ($stage !~ /\n/);
-            $stage =~ s/^.*\n//;
-            push(@lines, $&);
+        # if we a getting data from the pipe and we were
+        # busy last time let's not go this time
+        unless (scalar @ready_to_read > 0 &&
+                $Tasks_done == $Tasks_per_select) {
+        
+            my $task_input_counter = 0;
+            while (length($stage) != 0 &&
+                    $task_input_counter++ < $Tasks_per_select) {
+                last if ($stage !~ /\n/);
+                $stage =~ s/^.*\n//;
+                push(@lines, $&);
+            }
+        } else {
+            print STDERR "mcfeely-spawn: skipping injection, we are busy\n"
+                if $opt{'d'};
         }
-    }
+    } 
     # add any leftover $stage to the $Manager_read_buffer
     $Manage_read_buffer = $stage;
+    $Tasks_done         = scalar @lines;
 
     # do stuff with the lines
     foreach $line (@lines) {
@@ -194,7 +205,7 @@ while (1) {
             if ($@ =~ /^child: /) {
                 print STDOUT "child started but: $@\n";
                 exit 99;
-            } elsif ($@ = /^filehandles: /) {
+            } elsif ($@ =~ /^filehandles: /) {
                 # this is probably _not_ the way to do this
                 # but I can't think of another way to do it
                 # we want to slow things down, let's do it
@@ -266,6 +277,7 @@ sub process_manage_line {
     if (!defined( $pid = fork() )) {
         die "unable to fork: $!";
     } elsif ($pid == 0) {
+
         # I'm the kid
         # dup STDOUT onto a pipe that we are going to associate
         # with this kid
@@ -273,18 +285,20 @@ sub process_manage_line {
             "child: can't get fileno() of write_pipe: $!";
         open(STDOUT, ">& $write_pipe_no") || die
             "child: unable to dup write_pipe to STDOUT: $!";
+
         # close the pipes to mcfeely-manage
         $manage_pipe_read->close() || die
             "child: trouble closing the manage_pipe_read: $!";
         $manage_pipe_write->close() || die
             "child: trouble closing the manage_pipe_write: $!";
+
         # open STDIN as the task
         open(STDIN, "queue/task/$tasknum") || die
             "child: trouble openning queue/task/$tasknum: $!";
+
         # and exec
-        #close STDERR;
-        exec 'bin/mcfeely-ttpc', $tasknum || die
-            "child: unable to launch mcfeely-ttpc: $!";
+        exec 'bin/mcfeely-ttpc', $tasknum;
+        die "child: unable to launch mcfeely-ttpc: $!";
     } else {
         # parent
         # close the write pipe and record some info
@@ -319,14 +333,14 @@ sub reaper {
 
             if (!defined($read_count)) {
                 # something went wrong during the read
+                $Msg{$baby} = "error reading from ttpc: $!";
                 delete $Pipehandle{$baby};
                 $fh->close();
-                hard($Tasknum{$baby}, "bad read from ttpc: $!");
             } elsif ($read_count == 0) {
                 # the other end is not there, this is unexpected
+                $Msg{$baby} = "unreadable error from ttpc";
                 delete $Pipehandle{$baby};
                 $fh->close();
-                hard($Tasknum{$baby}, "EOF on read from ttpc");
             } else {
                 # cool, store the mesage
                 $Msg{$baby} = "$buf";
