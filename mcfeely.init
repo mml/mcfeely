@@ -6,33 +6,32 @@
 # See docs in /usr/doc/mcfeely-{version}
 #
 
-# Source function library.
-. /etc/rc.d/init.d/functions
-
 # Set some variables
 PROG=mcfeely-start
 BIN=/opt/mcfeely/bin
-LOGGER=start-logger.pl
+
+# Source function library.
+. /etc/rc.d/init.d/functions
 
 [ -f $BIN/mcfeely-start ] || exit 0
 
 # See how we were called
 case "$1" in
   start)
-	PATH=/usr/local/bin:/usr/bin:$PATH
-	echo -n "Starting mcfeely: "
-	daemon $BIN/$PROG -u mcfeely 2>&1 $BIN/$PROG
-    	touch /var/lock/subsys/$PROG
+     PATH=/usr/local/bin:/usr/bin:$PATH
+     echo -n "Starting mcfeely: "
+     initlog --facility local6 --priority debug -c daemon $BIN/$PROG -u mcfeely 
+     touch /var/lock/subsys/$PROG
     ;;
   stop)
-	echo -n "Stopping mcfeely: "
-	killproc $BIN
-	echo "done"
-	rm -f /var/lock/subsys/$PROG
+     echo -n "Stopping mcfeely: "
+     initlog --facility local6 --priority debug -c killproc $BIN
+     echo "done"
+     rm -f /var/lock/subsys/$PROG
     ;;
   restart)
-	$0 stop
-	$0 start
+     $0 stop
+     $0 start
 	;;
   *)
 	echo "Usage: $0 {start|stop|restart}"

@@ -36,7 +36,9 @@ TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
 	McFeely.pm topdir mcfeely.h chdir.pl Internal.pm snooze \
 	secretmaker 
 
-HTML	 	= Metatask.html Job.html Task.html	
+HTML	 	= Metatask.html Job.html Task.html  \
+		      mcfeely-spawn.html mcfeely-start.html mcfeely-manage.html
+
 HOWTO		= HOWTO TODO
 
 ROOTUSER 	= $(shell cat ROOTUSER)
@@ -62,6 +64,7 @@ VERSION		= $(shell cat version)
 EVERYTHING	= $(shell cat MANIFEST)
 DIST		= $(PROJECT)-$(VERSION)
 TARFILE		= $(DIST).tar.gz
+INITFILE	= mcfeely.init
 SPECFILE	= $(PROJECT).spec
 RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm \
 			  $(RPMDIR)/RPMS/i386/$(PROJECT)-client-$(VERSION)-1.i386.rpm \
@@ -71,6 +74,7 @@ FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva
 WWWLOC		= www.systhug.com:~systhug/www/mcfeely
 SUBDIRS		= docs
 SOURCEDIR   = $(shell pwd)
+MANDIR		= usr/man/man8
 
 .PHONY: all install rpminstall dist rpm ftp clean
 .INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
@@ -114,6 +118,13 @@ install: all PERLDIR
 			`./topdir`/lib/perl; \
 	done
 
+	install -o $(ROOTUSER) -g $(ROOTUSER) -m 755 -d `./topdir`/$(MANDIR)
+
+	for i in mcfeely-queue.8 mcfeely-ttpc.8 mcfeely-ttpd.8 ; do \
+		install -o $(ROOTUSER) -g $(ROOTUSER) -m 0644 $$i \
+			`./topdir`/$(MANDIR); \
+	done
+
 rpminstall: all PERLDIR
 	for i in '' /bin /comm /control /lib /lib/perl; do \
 		install -m 0755 -d $(ROOT)/`./topdir`$$i ;\
@@ -150,7 +161,13 @@ rpminstall: all PERLDIR
 
 	for i in attempt_tasks.pl files.pl safe_to_exit.pl \
 		chdir.pl jobs.pl read_results.pl tasks.pl; do \
-		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
+		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl ; \
+	done
+
+	install -m 0755 -d $(ROOT)/$(MANDIR) 
+
+	for i in mcfeely-queue.8 mcfeely-ttpc.8 mcfeely-ttpd.8 ; do \
+		install -m 0644 $$i $(ROOT)/$(MANDIR) ; \
 	done
 
 dist: $(TARFILE)
@@ -175,6 +192,7 @@ $(SRPMFILE): do-rpm
 
 do-rpm: $(TARFILE) $(SPECFILE)
 	cp $(SPECFILE) $(RPMDIR)/SPECS/
+	cp $(INITFILE) $(RPMDIR)/SOURCES/
 	cp $(TARFILE) $(RPMDIR)/SOURCES/
 	rpm -ba $(RPMDIR)/SPECS/$(SPECFILE)
 
@@ -183,7 +201,7 @@ ftp: $(RPMFILE) $(SRPMFILE)
 	scp $(RPMFILE) $(FTPLOC)/RPMS/i386
 	scp $(SRPMFILE) $(FTPLOC)/SRPMS
 
-www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML) $(HOWTO)
+www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML) $(HOWTO) plhtml
 	chmod 644 $(RPMFILE) $(SRPMFILE) $(TARFILE) $(HTML) $(HOWTO)
 	scp $(RPMFILE) $(WWWLOC)/dist
 	scp $(SRPMFILE) $(WWWLOC)/dist
@@ -203,6 +221,8 @@ $(SPECFILE): $(SPECFILE).in version BLURB TOPDIR ROOTUSER MCUSER MCGROUP \
 
 test:
 	perl -cw mcfeely-manage
+	perl -cw mcfeely-start
+	perl -cw mcfeely-spawn
 
 mcfeely-queue: mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	copy_bytes.o safe_read.o safe_write.o
@@ -267,3 +287,8 @@ createtestdir: McFeely.pm Internal.pm chdir.pl
 
 .pm.html: Metatask.pm Job.pm Task.pm
 	pod2html $< > $*.html
+
+plhtml: mcfeely-manage mcfeely-spawn mcfeely-start
+	for i in $? ; do \
+	 pod2html $$i > $$i.html ;	\
+	done 	

@@ -113,18 +113,18 @@ a friend to help it listen on port 757. Add the following to
 If you wish to run mcfeely-ttpd from inetd add the following to 
 /etc/inetd.conf:
 
-  ttp2    stream tcp      nowait  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
+  ttp2    stream tcp      nowait.1000  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
 
-If you are going to be running mcfeely with a large number of tasks
-you will need to change the default maximum number of connections from
-40 to something higher by changing 'nowait' to 'nowait.80' or
-something along those lines.
+The 'nowait.1000' is because the default limit of only 40 connections
+per minute is too low on a busy mcfeely client.
 
 If you wish you can use a tool like tcpserver from Dan Bernstein (of
 qmail fame, see www.qmail.org) instead of inetd:
 
  /usr/local/bin/tcpserver -v -c8 -u0 -g0 saliva.kiva.net 757 \
-   /opt/mcfeely/bin/mcfeely-ttpd  &> /tmp/ttpd.log &
+   /opt/mcfeely/bin/mcfeely-ttpd  &
+
+mcfeely-ttpd will syslog to the LOG_DAEMON facility.
 
 If your mcfeely client is on another machine you must configure
 inetd.conf or tcpserver on the other machine and adjust the
