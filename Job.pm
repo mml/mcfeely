@@ -61,8 +61,9 @@ Sets the description.
 =item add_tasks( TASK, [TASK, ...] )
 
 Adds the listed C<McFeely::Task>s to the job. If the provided
-task references are not defined or are empty strings then die.
-If you don't want to die in add_tasks, run add_tasks in an eval.
+task references are not in the C<McFeely::Task> class or a sub
+class thereof, die. If you don't want to die in add_tasks, run
+add_tasks in an eval.
 
 =item list_tasks
 
@@ -87,7 +88,8 @@ L<McFeely::Metatask>
 
 =head1 AUTHORS
 
-Matt Liggett <mml@pobox.com>, Chris Dent <cdent@kiva.net>
+Matt Liggett E<lt>mml@pobox.comE<gt>, Chris Dent E<lt>cdent@kiva.netE<gt>,
+Adrian Hosey E<lt>ahosey@kiva.netE<gt>
 
 =cut
 
@@ -132,8 +134,9 @@ sub add_tasks {
     my $self = shift;
 
     foreach (@_) {
-        if (!defined($_) || $_ !~ /\w+/) {
-            die "add_tasks: provided arg is not a McFeely::Task reference\n";
+        if (! $_->isa('McFeely::Task')) {
+            die "add_tasks: provided arg '$_' is not a McFeely::Task " .
+                "reference\n";
         }
         push @{$self->{tasks}}, $_;
     }
