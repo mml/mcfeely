@@ -1,0 +1,5 @@
+/var/log/mcfeely/mcfeely.log {
+    postrotate
+        /usr/bin/killall -HUP syslogd
+    endscript
+}

@@ -66,6 +66,8 @@ my %Msg;           # the message from the comm
 
 # when our children die, we must reap
 $SIG{'CHLD'} = \&reaper;
+# we want to ignore sig TERM 
+$SIG{'TERM'} = 'IGNORE';
 
 # get in and out from the command line
 $in  = shift;
@@ -148,13 +150,13 @@ while (1) {
             $stage .= $buf while
                 (defined($ok = $manage_pipe_read->read($buf, 1024))
                     and $ok > 0);
-            #if (defined($!) && $! != &POSIX::EWOULDBLOCK) {
             if (defined($!) && $! != EWOULDBLOCK) {
-                die "read error: $!";
+                die "mcfeely-manage pipe gone: $!\n";
             }
         };
         if ($@) {
-            die "error getting data from mcfeely-manage: $@\n";
+            # this is a bit redundant but nice for future expansion
+            die "mcfeely-spawn exiting: $@\n";
         }
     }
 

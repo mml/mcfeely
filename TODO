@@ -10,24 +10,12 @@ o in many place files are opened and if there is an error it is not
 o create a collection of docs that get installed with the rpm so
   that a description of what's going on is readily available
   (2000.0621)
-o minimize the kiva aspects in this and other rpms so we can have
-  a more general distribution (2000.0515)
-o generic non kiva specific init scripts
-  matt says he's working on this one (2000.0515)
-o a suite of test and example comms  (2000.0515)
-
 o move ::Task, ::Job, ::MetaTask to using the ahosey approvided
   eval() and die() methods which make life much easier
   (2000.0522: cdent, mml)
 o accessor methods inside Task that Job uses such that Task has
   a structure with names instead of just a list (2000.0522:
   cdent, mml)
-
-Stuff in here prior to May 15, 2000
-
-o post-tape-recovery queue fixer
-o make sure we're really writing to file every time we think we are
-o firewall stuff
 o abstract the mailing in mail_report so it is not dependendent on
   /bin/mail but instead uses something like Mail::Send or whatever
 
