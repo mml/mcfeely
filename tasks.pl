@@ -1,3 +1,42 @@
+sub task_new_task(@) {
+    my $key;
+    my $val;
+    my $task = [];
+
+    while (@_) {
+        $key = shift;
+        $val = shift;
+        $task->[$key] = $val;
+    }
+
+    return $task;
+}
+
+sub task_new_task_from_file($) {
+    my $ino = shift;
+    my $data;
+    my $task = [];
+    my $waiters = [];
+
+    open INFO, "info/$ino" or do {
+        plog "Cannot open info/$ino: $!";
+        return undef;
+    };
+
+    read INFO, $task->[$TASK_NEEDS_DONE], 1;
+    read INFO, $task->[$TASK_NDEPS], 1;
+    while ((read INFO, $data, 4) == 4) {
+        $data = unpack 'L', $data;
+        push @$waiters, $data;
+    }
+    close INFO;
+    $task->[$TASK_WAITERS] = $waiters;
+    $task->[$TASK_BIRTH] = (stat INFO)[10];
+    $task->[$TASK_INO] = $ino;
+
+    return $task;
+}
+
 # insert a task into a hash table
 sub task_insert($) {
     my $task = shift;
@@ -16,41 +55,4 @@ sub task_enqueue($) {
         }
     }
     push @Tasks, $task;
-}
-
-# scan a task directory (either newt or task) for tasks
-sub scan_task($$) {
-    my $dir = shift;
-    my $log_new = shift;
-
-    my $file;
-    my $task;
-    my $job;
-
-    opendir TASKD, $dir or do {
-        log "Could not open $dir: $!";
-        return undef;
-    };
-    TASK: while (defined($file = files(TASKD))) {
-        open INFO, "info/$file" or do {
-            log "Could not open info/$file: $!\n";
-            next TASK;
-        };
-        $task = McFeely::Task->new $TASK_INO => $file, $TASK_NEXT_TRY => time;
-        read(INFO, $task->[$TASK_NDEPS], 1) or do {
-            log "Could not read from info/$file: $!\n";
-            next TASK;
-        };
-        read(INFO, $job, 4) == 4 or do {
-            log "Could not read from info/$file: $!\n";
-            next TASK;
-        };
-        task_insert $task;
-        task_enqueue $task;
-        $job = unpack 'L', $job;
-        log "new task $file" if $log_new;
-        log "info task $file job $job";
-        close INFO;
-    }
-    return 1;
 }
