@@ -1,0 +1,63 @@
+.TH mcfeely-queue 8
+.SH NAME
+mcfeely-queue \- queue a mcfeely job
+.SH SYNOPSIS
+.B mcfeely-queue
+.SH DESCRIPTION
+.B mcfeely-queue
+reads a series of (
+.I host\fR,
+.I comm\fR,
+[
+.I arg
+...
+]
+)
+tuples from descriptor 0.  It then reads a series of (
+.I dependence_count\fR,
+.I waiter_count\fR,
+[
+.I waiter
+...
+]
+) tuples from descriptor 1.  These comprise the task specifications.
+.B mcfeely-queue
+then reads a
+.I job description\fR,
+.I failure notification address\fR, and 
+.I success notification address
+from descriptor 2.  These complete the job specification.
+.SH PROTOCOL DETAILS
+Descriptor 0 is read first.  Each tuple is composed of a
+.I bytecount
+(unsigned int), null-terminated
+.I host\fR,
+null-terminated
+.I comm\fR,
+and individually null-terminated
+.I arg\fRs.  The
+.I bytecount
+is the total number of bytes in the rest of the tuple.
+
+Descriptor 1 is read next.  Each tuple is composed of a
+.I dependence_count
+(char),
+.I waiter_count
+(char), and a list of
+.I waiter\fRs.
+Each
+.I waiter
+is a single byte representing a task which requires this one
+to complete before it may begin.  The tasks are 0-numbered based
+on the order they are presented to
+.B mcfeely-queue\fR.
+
+Descriptor 2 is read last.  The
+.I description\fR,
+.I failure notification address\fR, and
+.I success notification address
+are each presented in order and terminated with a NULL byte.
+.SH EXIT CODES
+.B mcfeely-queue
+does not print diagnostics.  It exits 0 if it has successfully
+queued the job.  It exits 1 if it has failed.
