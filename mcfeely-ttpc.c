@@ -13,8 +13,7 @@
 
 #include "hostport.h"
 
-#define HOST (argv[1])
-#define TASKID (argv[2])
+#define TASKID (argv[1])
 
 void   ok(char *m, int l) { write(1, m, l); exit(  0); }
 void soft(char *m, int l) { write(1, m, l); exit( 99); }
@@ -47,8 +46,9 @@ int argc;
 char *argv[];
 {
     int pfd;
-    int tfd;
     knsbuf_t buf = {0, 0, 0};
+    char host[1024];
+    char *i;
     char *realhost;
     int realport;
     int s;
@@ -65,16 +65,17 @@ char *argv[];
     pfd = open("control/secret", O_RDONLY);
     if (pfd == -1) soft("cannot open control/secret", 26);
 
-    /* open task file */
-    tfd = task_open(TASKID);
-    if (tfd == -1) soft("cannot open task", 16);
-
     /* tcp socket */
     tcp = getprotobyname("tcp");
     s = socket(AF_INET, SOCK_STREAM, tcp->p_proto);
 
+    i = host;
+    do {
+        if (read(0, i, 1) != 1) soft("unexpected eof", 14);
+    } while (*i++ != '\0');
+
     /* get real hostname and port */
-    if (! hostport(&realhost, &realport, HOST))
+    if (! hostport(&realhost, &realport, host))
         soft("cannot find host in control/hosts", 33);
 
     /* lookup in DNS */
@@ -98,7 +99,7 @@ char *argv[];
     if (write(s, &tasknum, 4) != 4)   soft_write();
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
-    if (knsfwrite(s, tfd) == 1)       soft_write();
+    if (knsfwrite(s, 0) == 1)       soft_write();
 
     /* recv: response */
     if (read(s, &code, 1) != 1)  soft_read();
