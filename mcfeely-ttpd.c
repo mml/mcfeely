@@ -64,6 +64,7 @@ copy_tube(void)
     if (msg == 0) {
         log("out of memory", 13);
         write(1, "0:,", 3);
+	free(msg);
         return;
     }
 
@@ -71,9 +72,11 @@ copy_tube(void)
     if (len < 0) {
         log("read error", 10);
         write(1, "0:,", 3);
+	free(msg);
         return;
     }
     if (knswrite(1, msg, len) == -1) log("write error", 11);
+    free(msg);
 }
 
 void
@@ -126,12 +129,22 @@ knsbuf_t buf;
     secret = (char *)malloc(buf.len);
     if (secret == 0) _exit(0);
     fd = open("control/mysecret", O_RDONLY);
-    if (fd == -1) return 0;
+    if (fd == -1) {
+	    free(secret); 
+	    return 0;
+    }
     i = read(fd, secret, buf.len);
-    if (i != buf.len) return 0;
+    if (i != buf.len) {
+	    free(secret);
+	    return 0;
+    }
     close(fd);
     for (i = 0; i < buf.len; ++i)
-        if (((char *)buf.start)[i] != secret[i]) return 0;
+        if (((char *)buf.start)[i] != secret[i]) {
+		free(secret);
+		return 0;
+	}
+    free(secret);
     return 1;
 }
 
