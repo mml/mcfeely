@@ -21,13 +21,10 @@
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
 use strict;
-no strict 'subs';
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
 
 use McFeely::Internal;
 use POSIX;
 use IO::Select;
-#use IO::File;
 use IO::Handle;
 use Fcntl;
 use Symbol;
@@ -35,41 +32,63 @@ use Symbol;
 require 'chdir.pl';
 require 'log.pl';
 
+# these hashes contain per task information
+# about filehandles, slots, the status of the fork
+# and any message that might be involved
+my %Fh;
+my %Slot;
+my %Stat;
+my %Msg;
+
 $| = 1;
 
-&chdir_top or bail("cannot chdir: $!");
+# change directories to the top of the mcfeely tree so we 
+# can have reasonable access to the queue
+chdir_top() or bail("cannot chdir: $!");
 
-&init;
-&doit(\&launch_ttpc, \&pack_result);
+# we need to establish the reaper as being there for our later
+# use when our children die
+$SIG{CHLD} = \&reaper;
+
+# the subroutine in which we read the information and fork 
+# our the mcfeely-ttpc
+doit(\&launch_ttpc, \&pack_result);
+
+# we're done
+exit;
 
 sub soft { print STDOUT "@_\n"; exit 99 }
 
+# fork off mcfeely-ttpc
 sub launch_ttpc {
-	my $ino = shift;
+    my $ino = shift;
     chomp $ino;
-	my $pid;
+    my $pid;
 
-	if (!defined ($pid = fork)) {
-	        # There was an error.
-		return($ino, undef);
-	} elsif ($pid == 0) {
-	        # I am the child.
-	        open STDIN, "queue/task/$ino"
-		        or soft "trouble opening queue/task/$ino: $!";
-		open(STDOUT, '>&main::WP')
-			or soft "trouble duping STDOUT: $!";
-		close STDERR;
-		#open(STDERR, '>&main::WP')
-		#	or soft "trouble duping STDERR: $!";
-		exec 'bin/mcfeely-ttpc', $ino or soft "Couldn't exec tcpclient: $!";
-	} else {
-	        # I am the parent.
-	        # close WP, my child is going to write on it not me.
-                close main::WP;
-		return($ino, $pid);
-	}
+    if (!defined ($pid = fork)) {
+        # There was an error.
+        return($ino, undef);
+    } elsif ($pid == 0) {
+        # I am the child.
+        open STDIN, "queue/task/$ino"
+            or soft "trouble opening queue/task/$ino: $!";
+        open(STDOUT, '>&main::WP')
+            or soft "trouble duping STDOUT: $!";
+        close STDERR;
+        #open(STDERR, '>&main::WP')
+        #    or soft "trouble duping STDERR: $!";
+
+        # start our client with the task number identifier
+        exec 'bin/mcfeely-ttpc', $ino or soft "Couldn't exec tcpclient: $!";
+    } else {
+        # I am the parent.
+        # close WP, my child is going to write on it not me.
+        close main::WP;
+        return($ino, $pid);
+    }
 }
 
+# take the results from the mcfeely-ttpc and pass them pack up 
 sub pack_result {
     my %args = @_;
 
@@ -79,111 +98,88 @@ sub pack_result {
     return(pack('Lca*', $args{slot}, $args{status}, $args{msg}));
 }
 
-
-my %Fh;
-my %Slot;
-my %Stat;
-my %Msg;
-
-sub EXIT_HARD() { 100 }
-sub EXIT_SOFT() { 99 }
-sub EXIT_OK() { 0 }
-
-sub safe_string(@) {
-	my $string = join '', @_;
-
-	$string =~ s/\s+$//;
-	$string =~ s/\s+/_/g;
-	return $string;
-}
-
-sub init { $SIG{CHLD} = \&reaper }
-
 sub doit {
-	my $fork_sub = shift;
-	my $pack_sub = shift;
+    # reference to the subroutine that is called when
+    # we want to fork
+    my $fork_sub = shift;
+    # reference to the subrouting that is called that
+    # reads the results from the child
+    my $pack_sub = shift;
 
-	my $buf;
-	my $fh;
-	my $flags;
-	my $line;
+    my $fh;
+    my $buf;
+    my $line;
+    my $ok;
+    my $pid;
+    my $oldsigset;
+    my $sig_chld_set;
+    my $slot;
+    my $stage;
+    my @lines;
     my @ready_to_read;
-	my $ok;
-	my $oldsigset;
-	my $pid;
-	my $rin;
-	my $rout;
-	my $sig_chld_set;
-	my $slot;
-	my $stage;
-	my @instructions;
-	my @lines;
 
-	select STDOUT; $| = 1;
+    select STDOUT; $| = 1;
 
-    #my $stdin_handle = new IO::File(\*STDIN) || die "new file fail: $!";
-    # create the files we are going to be selecting on
+    # let the forthcoming select loop know that it is STDIN (sort of)
+    # that we'll be waiting on
     my $select = new IO::Select();
-    #$select->add($stdin_handle);
     $select->add(\*STDIN);
 
-	$sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
-	$oldsigset = POSIX::SigSet->new;
+    $sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
+    $oldsigset = POSIX::SigSet->new;
 
     # loop
-	while (1) {
-		# wait for some data or a signal
-        #$stdin_handle->blocking(1);
+    while (1) {
+        # wait for some data or a signal
         STDIN->blocking(1);
         @ready_to_read = $select->can_read(240);
 
-		# read instructions
-        #$stdin_handle->blocking(0);
+        # read instructions
         STDIN->blocking(0);
-		$stage .= $buf
-			while (defined($ok = sysread STDIN, $buf, 1024)
+        $stage .= $buf
+            while (defined($ok = sysread STDIN, $buf, 1024)
                 and $ok > 0);
-		return unless $! == POSIX::EWOULDBLOCK;
+        return unless $! == POSIX::EWOULDBLOCK;
 
-		# load lines
-		if (defined $stage) {
-			push @lines, $& while $stage =~ s/^.*\n//;
-		}
+        # load lines
+        if (defined $stage) {
+            push @lines, $& while $stage =~ s/^.*\n//;
+        }
 
-		# follow instructions
-		while ($line = shift @lines) {
-			pipe(($fh = &gensym), main::WP);
-			sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
-			($slot, $pid) = &$fork_sub($line);
-			$Slot{$pid} = $slot;
-			$Fh{$pid} = $fh;
-			sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);
-		}
+        # follow instructions
+        while ($line = shift @lines) {
+            pipe(($fh = &gensym), main::WP);
+            sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
+            ($slot, $pid) = &$fork_sub($line);
+            $Slot{$pid} = $slot;
+            $Fh{$pid} = $fh;
+            sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);
+        }
 
-		# dig the results
-		PID: foreach $pid (keys %Stat) {
-			print &$pack_sub(slot => $Slot{$pid},
-			                 status => $Stat{$pid},
-							 msg => $Msg{$pid});
-			delete $Slot{$pid};
-			delete $Stat{$pid};
-			delete $Msg{$pid};
-		}
+        # dig the results
+        PID: foreach $pid (keys %Stat) {
+            print &$pack_sub(slot => $Slot{$pid},
+                             status => $Stat{$pid},
+                             msg => $Msg{$pid});
+            delete $Slot{$pid};
+            delete $Stat{$pid};
+            delete $Msg{$pid};
+        }
 
-	}
+    }
 }
 
 sub reaper {
-	my $baby;
-	my $fh;
+    my $baby;
+    my $fh;
 
-	while (($baby = waitpid(-1, &WNOHANG)) > 0) {
-		$fh = $Fh{$baby}; # XXX: Oi!
-		$Stat{$baby} = ($? >> 8);
-		fcntl($fh, F_SETFL, fcntl($fh, F_GETFL, 0)|O_NONBLOCK);
-		$Msg{$baby} = <$fh>;
-		close $fh;
-		delete $Fh{$baby};
-	}
+    while (($baby = waitpid(-1, &WNOHANG)) > 0) {
+        $fh = $Fh{$baby}; # XXX: Oi!
+        $Stat{$baby} = ($? >> 8);
+        fcntl($fh, F_SETFL, fcntl($fh, F_GETFL, 0)|O_NONBLOCK);
+        $Msg{$baby} = <$fh>;
+        close $fh;
+        delete $Fh{$baby};
+    }
 }
 

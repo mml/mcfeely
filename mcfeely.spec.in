@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.16 2000/06/02 21:57:43 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.16.2.1 2000/06/20 01:35:42 cdent Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -42,7 +42,7 @@ Files common to mcfeely-client and mcfeely-server.
 %package server
 Summary: asynchronous task execution on multiple hosts -- server
 Group: Daemons
-Requires: mcfeely-common Spawner
+Requires: mcfeely-common
 
 %description server
 @BLURB@
