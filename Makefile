@@ -95,14 +95,12 @@ install: all PERLDIR
 	done
 	mkfifo `./topdir`/queue/trigger
 
-	install -o $(ROOTUSER) -g $(QGROUP) -m 0440 McFeely.pm `cat PERLDIR`
+	install -o $(ROOTUSER) -g $(QGROUP) -m 0444 McFeely.pm `cat PERLDIR`
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0755 -d `cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm; do \
-		install -o $(ROOTUSER) -g $(QGROUP) -m 0440 $$i `cat PERLDIR`/McFeely ;\
+	for i in Job.pm Task.pm Metatask.pm Internal.pm; do \
+		install -o $(ROOTUSER) -g $(QGROUP) -m 0444 $$i `cat PERLDIR`/McFeely ;\
 	done
-
-	install -o $(ROOTUSER) -g $(QGROUP) -m 0444 Internal.pm `cat PERLDIR`/McFeely
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
 	  do_select.pl jobs.pl read_results.pl tasks.pl; do \

@@ -49,6 +49,12 @@ McFeely tasks.
 
 Creates a C<McFeely::Task>.
 
+=item comm
+
+Return the name of the comm for this task. This does not assert
+anything about the existence of or appropriateness of the comm itself,
+just gives what is stored in this task.
+
 =item requires( TASK, [TASK, ...] )
 
 Returns a REQUIREMENT.  This requirement can then be fed to the
@@ -102,6 +108,9 @@ sub new {
 
     return(bless [@_], $class);
 }
+
+# Return the name of the comm in this task.
+sub comm { return @{$_}[1] }
 
 # returns ref to list: (SELF, REQUIRED_TASK_1, REQUIRED_TASK_2, ...)
 sub requires { [@_] }
