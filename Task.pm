@@ -44,6 +44,7 @@ Matt Liggett, mml@pobox.com
 =cut
 
 package McFeely::Task;
+use McFeely;
 use strict;
 
 sub new {
