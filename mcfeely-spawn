@@ -127,9 +127,7 @@ sub doit {
     my @lines;
     my @ready_to_read;
 
-    #STDOUT->autoflush(1);
     $srw->autoflush(1);
-
 
     # let the forthcoming select loop know that it is STDIN (sort of)
     # that we'll be waiting on

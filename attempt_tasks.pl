@@ -49,7 +49,8 @@ sub attempt_tasks() {
             push @ntasks, $task;
         } else {
             plog "$task->[$TASK_JOB]->[$JOB_INO]:$task->[$TASK_INO] " .
-                 "starting transfer to $task->[$TASK_HOST]";
+                 "($task->[$TASK_COMM]) starting transfer to " .
+                 "$task->[$TASK_HOST]";
             write_to_spawner $task->[$TASK_INO];
             $task->[$TASK_NEXT_TRY] = $now;
             ++$Tasks_in_progress;

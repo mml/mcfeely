@@ -57,12 +57,12 @@ sub scan_job($$) {
     my $tasknum;
 
     # pre make handles for the opens down below
-    my $dirhandle  = new IO::Handle;
-    my $deschandle = new IO::Handle;
+    my $dirhandle  = new IO::Dir;
+    my $deschandle = new IO::File;
     my $jobhandle  = new IO::File;
 
     # open up the directory and scan for some jobs in there
-    opendir $dirhandle, $dir or do {
+    $dirhandle->open($dir) or do {
         plog "Could not open $dir: $!";
         return undef;
     };
@@ -70,18 +70,22 @@ sub scan_job($$) {
     # for each job in there, take a look at it
     GET_JOB: while (defined($file = files($dirhandle))) {
         plog "$file new job" if $log_new;
-        open $deschandle, "desc/$file" or do {
+
+        # get the description so we can log it
+        $deschandle->open("desc/$file") or do {
             plog "Could not open desc/$file: $!";
             next GET_JOB;
         };
         plog "$file info: ", <$deschandle>;
-        close $deschandle;
+        $deschandle->close();
+
+        # open the job to get out the task number
         $job = job_new_job $JOB_INO => $file;
-        open $jobhandle, "$dir/$file" or do {
+        $jobhandle->open("$dir/$file") or do {
             plog "Could not open $dir/$file: $!\n";
             next GET_JOB;
         };
-        seek $jobhandle, 1, 1; #XXX: does this belong abstracted?
+        $jobhandle->seek(1, 1); #XXX: does this belong abstracted?
         TASK: while (job_read_task($jobhandle, \$tasknum)) {
             $task = task_new_task_from_file $tasknum;
             next TASK unless defined $task;
@@ -95,12 +99,12 @@ sub scan_job($$) {
 
             $task{$tasknum} = $task;
         }
-        close $jobhandle;
+        $jobhandle->close();
         rename "$dir/$file", "job/$file" if $log_new;
 
-	# For each task, $task->[$TASK_WAITERS] is a list of task
-	# numbers. Look up those numbers in %task and replace them
-	# with the actual task references.
+        # For each task, $task->[$TASK_WAITERS] is a list of task
+        # numbers. Look up those numbers in %task and replace them
+        # with the actual task references.
         foreach $task (keys %task) {
             for ($i = 0; $i <= $#{$task->[$TASK_WAITERS]}; ++$i) {
                 splice @{$task->[$TASK_WAITERS]}, $i, 1,
@@ -108,9 +112,7 @@ sub scan_job($$) {
             }
         }
     }
-    plog "scan_job: closing the dirhandle: $dir";
     $dirhandle->close();
-    undef($dirhandle);
     return 1;
 }
 

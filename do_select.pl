@@ -23,16 +23,29 @@ sub do_select() {
     # $select is global in mcfeely-manage's name space
 
     my $trigger = new IO::File;
+    my @hits;
+    my $buf;
 
     # open the trigger without blocking
     $trigger->open('trigger', O_RDONLY|O_NONBLOCK)
         or plog "Cannot open trigger: $!";
 
+    # once it is open, make it block
+    # or maybe not
+    # $trigger->blocking(1);
+
     # wait for activity
     $select->add($trigger);
-    $select->can_read(SLEEPYTIME());
+    @hits = $select->can_read(SLEEPYTIME()) ;
 
-    plog "do_select: past the select";
+    # read from the trigger so that the select knows we are 
+    # paying attention
+    foreach (@hits) {
+        if ($_ == $trigger) {
+            $trigger->read($buf, 1);
+        }
+    }
+
     $select->remove($trigger);
     close($trigger);
 }

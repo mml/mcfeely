@@ -221,7 +221,7 @@ sub read_results() {
     if ($code == $TASK_SUCCESS_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "$job->[$JOB_INO]:$num success: $msg";
+        plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) success: $msg";
         task_flag_done $num;
         $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
         report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
@@ -242,7 +242,7 @@ sub read_results() {
     } elsif ($code == $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "$job->[$JOB_INO]:$num failure: $msg";
+        plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: $msg";
         report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
 	                         "to $task->[$TASK_HOST]: failure: $msg";
         defunct_waiters $task;

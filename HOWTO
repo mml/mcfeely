@@ -1,5 +1,6 @@
 vi:sw=4:ts=4:ai:sm:et:wm=10
 
+======================================================================
 Introduction
 
 The documentation for McFeely is a bit spread out and confusing. This
@@ -11,6 +12,11 @@ In its first draft this document will only describe the client and
 server on a local box without ssh being involved. Discussion about use
 with ssh will be added later.
 
+If you have any questions about this, please subscribe to the
+mcfeely-l@systhug.com mailing list by sending mail to
+mcfeely-l-subscribe@systhug.com.
+
+======================================================================
 Installation
 
 To install you will need the following rpms:
@@ -61,30 +67,21 @@ things run:
 This program will log to STDERR so you may want to catch that.
 
 For the client side you need to run mcfeely-ttpd, it also logs to
-STDERR. The simplest thing to do is run it from inetd. Add the
-following to /etc/services:
-
-ttp2            757/tcp                         # mcfeely task transfer
-
-and the following to /etc/inetd.conf:
-
-ttp2    stream tcp      nowait  root   /opt/mcfeely/bin/mcfeely-ttpd \
-  mcfeely-ttpd
-
-and HUP inetd.
+STDERR. mcfeely-ttpd needs a friend to help it listen on port 757. A
+tool like tcpserver from Dan Bernstein (of qmail fame) should do the
+trick. It seems like it should work from inetd, but I haven't been
+able to get that to work.
 
 In /opt/mcfeely/control create a file called 'hosts' that is owned by
 root and is 644. In there put the information about the mcfeely
 clients.
 
-saliva          saliva   757        206.97.64.58
 saliva.kiva.net saliva   757        206.97.64.58
 
 The fields are client, server, port, secret-file. By convention, the
 secret-file is the IP of the client. (Replace 'saliva' with your
 host). Newer versions of the McFeely API do things based on full
-hostname so putting both the short name and the long name in the hosts
-file is a good idea.
+hostname.
 
 Next, we need to create a secret that is to be shared between the
 client and the server. A program, /opt/mcfeely/bin/secretmaker, will
@@ -94,9 +91,19 @@ create a file called newsecret in the current directory. Copy that to
 
 These files should be owned by root and group mcfeely, mode 640.
 
+======================================================================
 Testing
 
-In one window start up mcfeely by running this command (as root):
+In one window start up mcfeely-ttpd (the client) with tcpserver (do
+this as root):
+
+/usr/local/bin/tcpserver -c8 -v -g 0 -u 0 scalding.bton.kiva.net 757 \
+   /opt/mcfeely/bin/mcfeely-ttpd
+
+replacing the hostname with your hostname.
+
+In another window start up mcfeely (the server) by running this
+command (as root):
 
   /opt/mcfeely/bin/mcfeely-start
 
@@ -106,4 +113,11 @@ In another window run:
 
 Give your local client's name as the host and test_comm as the comm:
 
+  [root@cold /root]# /opt/mcfeely/bin/hostcheck.pl 
+  Hostname? [] scalding
+  Comm? [] test_comm
+  Args? [] 1
 
+If everything is working you should recieve a mail message to 'root'
+stating success. The mcfeely-start window will include some logging
+information, as will the mcfeely-ttpd window.

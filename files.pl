@@ -22,8 +22,8 @@
 sub files($) {
     my $handle = shift;
 
-    return(grep { !/^\.\.?$/ } readdir $handle) if wantarray;
-    while ($_ = readdir $handle) { return $_ unless /^\.\.?$/ }
+    return(grep { !/^\.\.?$/ } $handle->read()) if wantarray;
+    while ($_ = $handle->read()) { return $_ unless /^\.\.?$/ }
     return undef;
 }
 
