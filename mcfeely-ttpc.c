@@ -42,18 +42,15 @@ char *taskid;
 }
 
 int
-secret_open(raw_addr)
-char *raw_addr;
+secret_open(fnam)
+char *fnam;
 {
-    char fn[32]; /* "control/secrets/" (16) + "NNN.NNN.NNN.NNN" (15) + NUL (1) */
-    char *dotted_quad;
-    struct in_addr addr;
+    char *fn;
 
-    bcopy(raw_addr, &addr.s_addr, sizeof(addr.s_addr));
-
+    fn = malloc(strlen(fnam)+17); /* "control/secrets/" == 16 */
     strcpy(fn, "control/secrets/");
-    dotted_quad = inet_ntoa(addr);
-    strcat(fn, dotted_quad);
+    strcat(fn, fnam);
+
     return open(fn, O_RDONLY);
 }
 
@@ -67,12 +64,12 @@ char *argv[];
     knsbuf_t buf = {0, 0, 0};
     char host[1024];
     char *i;
-    /*char *realhost;*/
-    int port;
+    char *realhost;
+    char *secretfile;
+    int realport;
     int s;
     struct hostent *ent;
     struct protoent *tcp;
-    struct servent *ttp;
     struct sockaddr_in sin;
     unsigned int tasknum;
     char code;
@@ -89,33 +86,26 @@ char *argv[];
     } while (*i++ != '\0');
 
     /* get real hostname and port */
-    /*
-    if (! hostport(&realhost, &realport, host))
+    if (! hostport(&realhost, &realport, &secretfile, host))
         soft("cannot find host in control/hosts", 33);
-    */
-    ttp = getservbyname("ttp2", "tcp");
-    if (ttp == 0) port = 757;
-    else          port = ntohs(ttp->s_port);
 
     /* lookup in DNS */
-    ent = gethostbyname(host);
+    ent = gethostbyname(realhost);
     if (!ent) soft("cannot find host", 16);
     if (!ent->h_addr) soft("host has no address", 19);
     
     /* open secret file */
-    pfd = secret_open(ent->h_addr);
+    pfd = secret_open(secretfile);
     if (pfd == -1) soft("cannot open secret", 18);
 
     /* prepare sockaddr_in */
     bcopy(ent->h_addr, &sin.sin_addr, ent->h_length);
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(port);
+    sin.sin_port = htons(realport);
 
     /* connect */
-    if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
-        perror("connect");
+    if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1)
         soft("cannot connect", 14);
-    }
 
     /* send: auth, taskid, UID, GID, the task */
     if (knsfwrite(s, pfd) == -1)      soft_write();
