@@ -66,7 +66,18 @@ doit(\&launch_ttpc, \&pack_result);
 # we're done
 exit;
 
-sub soft { $srw->print("@_\n"); exit 99 }
+sub soft { 
+    my $slot   = shift;
+    my $status = 99;
+    my $msg    = join('', @_);
+
+    # Tack an end-of-transmission at the end of msg.
+    $msg .= "\n";
+    $msg .= pack 'c', 0x4;
+
+    $srw->print(pack('Lca*', $slot, $status, $msg));
+    exit 99;
+}
 
 # fork off mcfeely-ttpc
 sub launch_ttpc {
@@ -80,15 +91,16 @@ sub launch_ttpc {
     } elsif ($pid == 0) {
         # I am the child.
         open STDIN, "queue/task/$ino"
-            or soft "trouble opening queue/task/$ino: $!";
+            or soft $ino, "trouble opening queue/task/$ino: $!";
         open(STDOUT, '>&main::WP')
-            or soft "trouble duping STDOUT: $!";
+            or soft $ino, "trouble duping STDOUT: $!";
         close STDERR;
         #open(STDERR, '>&main::WP')
         #    or soft "trouble duping STDERR: $!";
 
         # start our client with the task number identifier
-        exec 'bin/mcfeely-ttpc', $ino or soft "Couldn't exec tcpclient: $!";
+        exec 'bin/mcfeely-ttpc', $ino or
+            soft $ino, "Couldn't exec tcpclient: $!";
     } else {
         # I am the parent.
         # close WP, my child is going to write on it not me.
