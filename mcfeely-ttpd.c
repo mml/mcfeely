@@ -126,6 +126,20 @@ knsbuf_t buf;
 }
 
 void
+find_nulls(buf, args)
+knsbuf_t buf;
+char *args[];
+{
+    int n;
+    int i;
+
+    n = 1;
+    for (i = 0; i < buf.len; ++i)
+        if (((char *)buf.start)[i] == '\0')
+            args[n++] = ((char *)buf.start)+i;
+}
+
+void
 main(void)
 {
     knsbuf_t buf = {0,0,0};
