@@ -113,9 +113,9 @@ a friend to help it listen on port 757. Add the following to
 If you wish to run mcfeely-ttpd from inetd add the following to 
 /etc/inetd.conf:
 
-  ttp2    stream tcp      nowait.100  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
+  ttp2    stream tcp      nowait.1000  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
 
-The 'nowait.100' is because the default limit of only 40 connections
+The 'nowait.1000' is because the default limit of only 40 connections
 per minute is too low on a busy mcfeely client.
 
 If you wish you can use a tool like tcpserver from Dan Bernstein (of
