@@ -24,13 +24,21 @@ use McFeely::Internal;
 require 'chdir.pl';
 require 'log.pl';
 
+# determine what we are running as
+# if we are mcfeely-qwatch we only want to produce info 
+# for jobs over a certain age
+my $Watcher = 0;
+$Watcher = 1 if ($0 =~ /watch$/);
+my $AGE_SECONDS = 3600;
+
+
 # usage: files(DIRHANDLE)
 # returns files like readdir, but it skips . and ..
 sub files(*) {
     my $glob = shift;
 
     return(grep { !/^\.\.?$/ } readdir $$glob) if wantarray;
-    while ($_ = readdir $$glob) { return $_ unless /^\.\.?$/ }
+    while (defined($_ = readdir $$glob)) { return $_ unless /^\.\.?$/ }
     return undef;
 }
 
@@ -68,6 +76,9 @@ sub scan_jobs($) {
     JOB: while (defined($file = files(JOBD))) {
         open JOB, "$dir/$file" or die "$dir/$file: $!\n";
         $ctime = (stat JOB)[10];
+        if ($Watcher) {
+            next JOB if ($ctime < (time - $AGE_SECONDS));
+        }
         $ctime = localtime $ctime;
         read(JOB, $failed, 1);
         $failed = unpack('C', $failed);
