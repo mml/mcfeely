@@ -202,7 +202,7 @@ main(void)
     if (! knsbuf_terminate(&buf)) _exit(0);
     if (! secret_match(buf)) _exit(0);
     if (read(0, &tasknum, 4) != 4) exit_read();
-    fprintf(stderr, "task %d\n", tasknum);
+    /* fprintf(stderr, "task %d\n", tasknum);  */
     if (read(0, &junk, 4) != 4)    exit_read();
     if (read(0, &junk, 4) != 4)    exit_read();
     buf.len = 0;
@@ -229,7 +229,7 @@ main(void)
     close(tube[1]);
     (void)wait(&status);
 
-    fprintf(stderr, "exit status %d\n", WEXITSTATUS(status));
+/*    fprintf(stderr, "exit status %d\n", WEXITSTATUS(status)); */
          if (! WIFEXITED(status))              Z("program abended", 15);
     else if (WEXITSTATUS(status) == 0)         K_tube();
     else if (WEXITSTATUS(status) == EXIT_SOFT) Z_tube();

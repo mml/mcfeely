@@ -8,13 +8,14 @@ document attempts to alleviate some of the confusion by providing a
 step by step guide to installing (from RPM) and then running a mcfeely
 server and client installation. 
 
-In its first draft this document will only describe the client and
-server on a local box without ssh being involved. Discussion about use
-with ssh will be added later.
-
 If you have any questions about this, please subscribe to the
 mcfeely-l@systhug.com mailing list by sending mail to
-mcfeely-l-subscribe@systhug.com.
+mcfeely-l-subscribe@systhug.com. In fact, if you poke at McFeely at
+all please subscribe to the list so we can chat. It's lonely.
+
+This information is clearly rough and in need of improvement, if you
+have some suggestions for improvement please get on the mailing list
+and let us know. Thanks.
 
 ======================================================================
 Installation
@@ -30,20 +31,10 @@ You should be able to find all of these in the mcfeely distribution
 directory at http://web.systhug.com/mcfeely/dist/
 
 knetstring provides the shared library used by the client and server
-to talk with one another. 
+to talk with one another in a reliable fashion.
 
 Before you install the rpms, create the user and groups which McFeely
 needs to run.
-
-ALSO: because of some weirdness with installing perl modules from RPMS
-on different versions of Redhat you may find that you need to do the
-following to make the perl modules that McFeely will install visible
-to your system:
-
-   cd /usr/lib/perl5/site_perl
-   cp -a 5.005/* .
-   rm -r 5.005
-   ln -s . 5.005
 
 YOU MAKE THESE SORTS OF CHANGES AT YOUR OWN RISK. MAKE SURE YOU KNOW
 WHAT YOU ARE DOING!
@@ -57,20 +48,20 @@ WHAT YOU ARE DOING!
    anyone to this group until after you have completed your testing
    and are familiar with the system.
 
-The mcfeely server is a continuously running processes so should
-therefore start at boot time and run continuously from there. At this
-time no initscripts are provided. They are in the works. To start
-things run:
+ALSO: because of some weirdness with installing perl modules from RPMS
+on different versions of Redhat you may find that you need to do the
+following to make the perl modules that McFeely will install visible
+to your system:
 
-   /opt/mcfeely/bin/mcfeely-start
+   cd /usr/lib/perl5/site_perl
+   cp -a 5.005/* .
+   rm -r 5.005
+   ln -s . 5.005
 
-This program will log to STDERR so you may want to catch that.
+Once you have done that, install the RPMS.
 
-For the client side you need to run mcfeely-ttpd, it also logs to
-STDERR. mcfeely-ttpd needs a friend to help it listen on port 757. A
-tool like tcpserver from Dan Bernstein (of qmail fame) should do the
-trick. It seems like it should work from inetd, but I haven't been
-able to get that to work.
+Next, mcfeely needs to be configured so it knows where your 
+clients are and how to authenticate them.
 
 In /opt/mcfeely/control create a file called 'hosts' that is owned by
 root and is 644. In there put the information about the mcfeely
@@ -86,28 +77,70 @@ secret-file is the IP of the client.
 The second and third fields allow you to use ssh tunnels if you like.
 This is not required, and if you don't understand ssh tunnels you may
 want to ask on the mailing list about how to do this. But if you want
-to do it see the ssh instructions below.
+to do it see the ssh instructions at the end of this document.
 
 Next, we need to create a secret that is to be shared between the
 client and the server. A program, /opt/mcfeely/bin/secretmaker, will
 create a file called newsecret in the current directory. Copy that to
 /opt/mcfeely/control/mysecret and
-/opt/mcfeely/control/secrets/<secret-file-name>.
+/opt/mcfeely/control/secrets/<secret-file-name>. Using the example
+above the secret-file-name would be 206.97.64.58. Use what works 
+for your configuration.
 
 These files should be owned by root and group mcfeely, mode 640.
+
+Now the mcfeely server and client process need to be run.
+
+The mcfeely server is a continuously running processes so should
+therefore start at boot time and run continuously from there. At this
+time no initscripts are provided. They are in the works. To start
+things run:
+
+   /opt/mcfeely/bin/mcfeely-start
+
+This program will log to STDERR so you may want to catch that. For 
+testing purposes the following will work (assuming you are using bash
+as your shell):
+
+  /opt/mcfeely/bin/mcfeely-start &> /tmp/mcfeely-serer.log
+
+For the client side you need to run mcfeely-ttpd. mcfeely-ttpd needs
+a friend to help it listen on port 757. Add the following to 
+/etc/services:
+
+  ttp2            757/tcp                         # mcfeely task transfer
+
+If you wish to run mcfeely-ttpd from inetd add the following to 
+/etc/inetd.conf:
+
+  ttp2    stream tcp      nowait  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
+
+If you wish you can use a tool like tcpserver from Dan Bernstein (of
+qmail fame, see www.qmail.org) instead of inetd:
+
+ /usr/local/bin/tcpserver -v -c8 -u0 -g0 saliva.kiva.net 757 \
+   /opt/mcfeely/bin/mcfeely-ttpd  &> /tmp/ttpd.log &
+
+If your mcfeely client is on another machine you must configure
+inetd.conf or tcpserver on the other machine and adjust the
+control/hosts file to include the information about the other host.
+You may have as many mcfeely clients as you like.
 
 ======================================================================
 Testing
 
-In one window start up mcfeely-ttpd (the client) with tcpserver (do
-this as root):
+If you are not using tcpserver you can skip this step, but make sure
+inetd is configured:
 
-/usr/local/bin/tcpserver -c8 -v -g 0 -u 0 scalding.bton.kiva.net 757 \
-   /opt/mcfeely/bin/mcfeely-ttpd
+  In one window start up mcfeely-ttpd (the client) with tcpserver (do
+  this as root):
 
-replacing the hostname with your hostname.
+  /usr/local/bin/tcpserver -c8 -v -g 0 -u 0 scalding.bton.kiva.net 757 \
+     /opt/mcfeely/bin/mcfeely-ttpd
 
-In another window start up mcfeely (the server) by running this
+  replacing the hostname with your hostname.
+
+In a window start up mcfeely (the server) by running this
 command (as root):
 
   /opt/mcfeely/bin/mcfeely-start
@@ -116,7 +149,7 @@ In another window run:
 
   /opt/mcfeely/bin/hostcheck.pl
 
-Give your local client's name as the host and test_comm as the comm:
+Give your mcfeely client's name as the host and test_comm as the comm:
 
   [root@cold /root]# /opt/mcfeely/bin/hostcheck.pl 
   Hostname? [] scalding
@@ -125,11 +158,29 @@ Give your local client's name as the host and test_comm as the comm:
 
 If everything is working you should recieve a mail message to 'root'
 stating success. The mcfeely-start window will include some logging
-information, as will the mcfeely-ttpd window.
+information, as will the mcfeely-ttpd window (if you are using
+tcpserver).
+
+If that works you can then use the serverslam.pl program to
+_aggressively_ test your mcfeely setup. serverslam.pl can be used to
+inject large numbers of jobs with random numbers of tasks to a given
+client. For example:
+
+   ./serverslamp.pl saliva test_comm 5 5
+
+will inject 5 jobs of up to 5 tasks a piece (each running test_comm)
+to the mcfeely client on saliva.
+
+A 5th and 6th argument let you choose to set the fnot and snot (see
+the McFeely::Job perl documentation) flags if you so choose.
 
 ======================================================================
 
 Using SSH:
+
+It is possible to set up ssh tunnels between the mcfeely server and
+the mcfeely clients. This encrypts the transaction providing increased
+security.
 
 For example if 'server' is your mcfeely server and saliva is your
 mcfeely client you can create an ssh tunnel from saliva to server, say
@@ -160,5 +211,5 @@ actually talk to server:45678 but get through to saliva:757 over the
 encrypted ssh connection.
 
 If you want these tunnels to be permanent you can set them up with
-supervise (see http://www.qmail.org/) in initscripts or probably
-run them out of init.
+supervise (see http://www.qmail.org/) in initscripts or running them
+out of init may work as well.
