@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.3 1999/07/21 20:38:05 mliggett Exp $
+# $Id: mcfeely.spec.in,v 1.4 1999/07/28 16:35:29 mliggett Exp $
 Summary: asynchronous task execution on multiple hosts
 Name: mcfeely
 Version: @version@
@@ -12,6 +12,33 @@ Vendor: Kiva Networking
 %description
 @BLURB@
 
+%package common
+Summary: files common to mcfeely-client and mcfeely-server
+Group: Daemons
+
+%description common
+Files common to mcfeely-client and mcfeely-server.
+
+%package server
+Summary: asynchronous task execution on multiple hosts -- server
+Group: Daemons
+Requires: mcfeely-common
+
+%description server
+@BLURB@
+
+This is the server package.
+
+%package client
+Summary: asynchronous task execution on multiple hosts -- client
+Group: Daemons
+Requires: mcfeely-common
+
+%description client
+@BLURB@
+
+This is the client package.
+
 %prep
 %setup
 
@@ -21,15 +48,18 @@ make
 %install
 make ROOT="$RPM_BUILD_ROOT" rpminstall
 
-%files
+%files common
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/lib
+
+%files server
 %attr(- @MCUSER@   @QGROUP@ )      @TOPDIR@/bin/mcfeely-queue
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-start
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-qread
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-manage
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-spawn
-%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpd
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
@@ -41,8 +71,9 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/fnot
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/snot
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
-%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm
-%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
-%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/lib
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely.pm
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely
+
+%files client
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm
