@@ -22,7 +22,7 @@
 
 #include "mcfeely.h"
 
-void
+int
 main(void)
 {
     printf("%s\n", mcfeely_topdir);

@@ -1,4 +1,4 @@
-/** $Id: secretmaker.c,v 1.1 1999/09/02 14:29:13 ahosey Exp $
+/** $Id: secretmaker.c,v 1.2 2000/07/06 00:16:28 cdent Exp $
  *  Create a 512-bit (64 byte) secret appropriate for use as a McFeely
  *  shared secret. The secret is written into "newsecret" in the
  *  current directory.
@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>

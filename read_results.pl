@@ -1,3 +1,4 @@
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -102,16 +103,21 @@ sub finish_job($) {
     my $job = shift;
     my $tasknum;
 
+    my $jobhandle = new IO::File;
+
     mail_report $job->[$JOB_INO], $job->[$JOB_FAILED];
 
-    open JOB, "job/$job->[$JOB_INO]" or plog "Could not open job/$job: $!";
-    seek JOB, 1, 1;
-    while (job_read_task(JOB, $tasknum)) {
+    $jobhandle->open("job/$job->[$JOB_INO]") or
+        plog "Could not open job/$job: $!";
+    # XXX: wait, if we fail here on this open we don't want to then
+    #      seek, something else needs to happen. what? cjd 2000.0621
+    seek $jobhandle, 1, 1;
+    while (job_read_task($jobhandle, \$tasknum)) {
         foreach (qw(task info)) {
             unlink "$_/$tasknum" or plog "Could not unlink $_/$tasknum: $!";
         }
     }
-    close JOB;
+    close $jobhandle;
     foreach (qw(fnot snot rep desc job)) {
         unlink "$_/$job->[$JOB_INO]" or plog "Could not unlink $_/$job->[$JOB_INO]: $!";
     }
@@ -150,7 +156,7 @@ sub walk_waiters(&$$) {
         $waiter = task_lookup $waitino;
         walk_waiters($thunk, $waiter, $depth);
     }
-    $info->close;
+    $info->close();
 }
 
 # Harmless side effect: completed tasks have NDEPS set to -1.
@@ -178,70 +184,107 @@ sub defunct_waiters($) {
 sub task_flag_done($) {
     my $ino = shift;
 
-    open INFO, "+< info/$ino" or do {
+    my $info = new IO::File;
+
+    $info->open("+< info/$ino") or do {
         plog "trouble: could not open info/$ino: $!";
         return;
     };
-    print INFO pack('c', 1);
-    close INFO;
+    $info->print(pack('c', 1));
+    $info->close();
 }
 
 # read the results from the spawner
 sub read_results() {
     my $line;
     my $old_sep;
+    my $read_count;
 
-    # Some of the packed data might resemble an EOT (ascii 4) so
-    # we have to count the bytes.
-    read SRR, $line, $TASK_NUM_LENGTH;
-    $num = unpack 'L', $line;
-    read SRR, $line, $TASK_CODE_LENGTH;
-    $code = unpack 'c', $line;
+    my $stage;
+    my $buf;
+    my $ok;
+    my @lines;
 
-    # Now we can treat the rest normally. But we look for EOT instead
-    # of a newline.
-    # Preserve the seperator before we change it.
-    $old_sep = $/;
-    $/ = pack 'c', 0x4;
-    chomp($msg = <SRR>);    
-    $/ = $old_sep;
+    # read all the data from the pipe
+    $stage .= $buf while
+        (defined($ok = $srr->read($buf, 1024)) and $ok > 0);
 
-    $task = task_lookup $num;
-    --$Tasks_in_progress;
+    # add any saved data from the last read to the front of the
+    # data
+    $stage = $Srr_readbuffer . $stage;
 
-    return unless defined $code;
+    # turn the incoming data into a list of lines
+    (@lines) = split(pack('c', 0x4), $stage);
 
-    if ($code == $TASK_SUCCESS_CODE) {
-        my $job = $task->[$TASK_JOB];
+    # we don't want to do anything if we have no data
+    return if (scalar(@lines) == 0);
 
-        plog "$job->[$JOB_INO]:$num success: $msg";
-        task_flag_done $num;
-        $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
-        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
-	                         "to $task->[$TASK_HOST]: success: $msg";
-        decrement_waiters $task;
-        $job->[$JOB_NTASKS]--;
-        finish_job $job if ($job->[$JOB_NTASKS] == 0);
-    } elsif ($code == $TASK_DEFERRAL_CODE) {
-        my $job = $task->[$TASK_JOB];
-
-        plog "$job->[$JOB_INO]:$num deferral: $msg";
-        # exponential backoff stolen from djb
-        $task->[$TASK_NEXT_TRY] =
-            $task->[$TASK_BIRTH] +
-              ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
-               + 5) ** 2;
-        task_enqueue $task;
-    } elsif ($code == $TASK_FAILURE_CODE) {
-        my $job = $task->[$TASK_JOB];
-
-        plog "$job->[$JOB_INO]:$num failure: $msg";
-        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
-	                         "to $task->[$TASK_HOST]: failure: $msg";
-        defunct_waiters $task;
-        $job->[$JOB_FAILED] = 1;
-        finish_job $job if ($job->[$JOB_NTASKS] == 0);
+    # if the data is incomplete on the last line, we need to save it
+    # for the next read
+    if ($lines[$#lines] !~ /\0$/) {
+        $Srr_readbuffer = pop(@lines);
+    } else {
+    # otherwise clear out that buffer
+        $Srr_readbuffer = '';
     }
+
+    # process each line
+    foreach $line (@lines) {
+        my ($num, $code, $msg);
+        chomp($line);
+        ($num, $code, $msg) = split('\0', $line);
+
+        # this is a hack! if we get 0 as the task identifier
+        # that means we are having some kind of bad error from
+        # mcfeely-spawn
+        if ($num == 0) {
+            die "Got an error from mcfeely-spawn: $msg";
+        }
+
+        my $task = task_lookup $num;
+        next unless defined $task;
+        next unless defined $code;
+
+        --$Tasks_in_progress;
+
+        # take the \0 off the end of msg, it was a handy little
+        # marker but we need it no more
+        $msg =~ s/\0$//;
+
+        # proces the task
+        if ($code == $TASK_SUCCESS_CODE) {
+            my $job = $task->[$TASK_JOB];
+
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) success: $msg";
+            task_flag_done $num;
+            $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
+            report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+                                 "to $task->[$TASK_HOST]: success: $msg";
+            decrement_waiters $task;
+            $job->[$JOB_NTASKS]--;
+            finish_job $job if ($job->[$JOB_NTASKS] == 0);
+        } elsif ($code == $TASK_DEFERRAL_CODE) {
+            my $job = $task->[$TASK_JOB];
+
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) deferral: $msg";
+            # exponential backoff stolen from djb
+            $task->[$TASK_NEXT_TRY] =
+                $task->[$TASK_BIRTH] +
+                  ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
+                   + 5) ** 2;
+            task_enqueue $task;
+        } elsif ($code == $TASK_FAILURE_CODE) {
+            my $job = $task->[$TASK_JOB];
+
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: $msg";
+            report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+                                 "to $task->[$TASK_HOST]: failure: $msg";
+            defunct_waiters $task;
+            $job->[$JOB_FAILED] = 1;
+            finish_job $job if ($job->[$JOB_NTASKS] == 0);
+        }
+    }
+        
 }
 
 1;

@@ -22,7 +22,7 @@
 
 #include "mcfeely.h"
 
-void
+int
 main(void)
 {
     printf("sub chdir_top() { chdir '%s' }\n\n1;\n", mcfeely_topdir);

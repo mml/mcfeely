@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -19,28 +20,51 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
-use McFeely::Internal;
 use strict;
+use McFeely::Internal;
 use Fcntl;
+use IO::Handle;
+use IO::Pipe;
 
 require 'chdir.pl';
 require 'log.pl';
 
-&chdir_top or &bail("Could not chdir: $!");
+chdir_top() or bail("Could not chdir: $!");
 
-pipe SIR, SIW;
-pipe SRR, SRW;
-fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK);
+# set up the pipes on which mcfeely-manage and mcfeely-spawn
+# will communicate
+my $sir = new IO::Handle;
+my $siw = new IO::Handle;
+my $srr = new IO::Handle;
+my $srw = new IO::Handle;
+my $pipe1 = new IO::Pipe($sir, $siw);
+my $pipe2 = new IO::Pipe($srr, $srw);
 
-my $pid = fork;
+# explicit set all these things to non-blocking
+# this is probably redundant
+$srr->blocking(0);
+$siw->blocking(0);
+$srw->blocking(1);
+$sir->blocking(0);
+
+my $pid = fork();
 if (!defined $pid) {
     die "cannot fork: $!\n";
 } elsif ($pid == 0) {
-    close SIW; close SRR;
-    open STDIN, '<&SIR';
-    open STDOUT, '>&SRW';
-    exec 'bin/mcfeely-spawn';
+    # child...
+    $siw->close();
+    $srr->close();
+    $sir->fcntl(F_SETFD, 0);
+    $srw->fcntl(F_SETFD, 0);
+    exec 'bin/mcfeely-spawn', $sir->fileno(), $srw->fileno();
+
 }
 
-close SIR; close SRW;
-exec 'bin/mcfeely-manage', fileno SRR, fileno SIW;
+# parent...
+
+$srr->fcntl(F_SETFD, 0);
+$siw->fcntl(F_SETFD, 0);
+
+$sir->close();
+$srw->close();
+exec 'bin/mcfeely-manage', $pid, $srr->fileno(), $siw->fileno();

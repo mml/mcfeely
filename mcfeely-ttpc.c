@@ -42,25 +42,6 @@ void hard(char *m, int l) { write(1, m, l); exit(100); }
 void soft_write(void) { soft("write failure", 13); }
 void soft_read(void)  { soft("read failure",  12); }
 
-/* given a taskid as a string, open the file on fd */
-int task_open(taskid)
-char *taskid;
-{
-    char *it;
-    int len;
-    int fd;
-
-    /* "queue/task/TASKID" -- TASKID+12 */
-    len = strlen(taskid) + 12;
-    it = (char *)malloc(len);
-    if (! it) return 0;
-
-    snprintf(it, len, "queue/task/%s", taskid);
-    fd = open(it, O_RDONLY);
-    free(it);
-    return fd;
-}
-
 int
 secret_open(fnam)
 char *fnam;
@@ -75,7 +56,7 @@ char *fnam;
 }
 
 
-void
+int
 main(argc, argv)
 int argc;
 char *argv[];
@@ -99,6 +80,8 @@ char *argv[];
     /* tcp socket */
     tcp = getprotobyname("tcp");
     s = socket(AF_INET, SOCK_STREAM, tcp->p_proto);
+    if (s == -1) soft("cannot open socket", 18);
+
 
     i = host;
     do {
@@ -134,7 +117,12 @@ char *argv[];
     if (write(s, &tasknum, 4) != 4)   soft_write();
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
-    if (knsfwrite(s, 0) == 1)       soft_write();
+
+    /* this right here deserves a comment because although
+       it isn't immediately clear, this is the crux of the
+       biscuit, this takes the entire contents of STDIN and
+       writes it to the socket */
+    if (knsfwrite(s, 0) == -1)       soft_write();
 
     /* recv: response */
     if (read(s, &code, 1) != 1)  soft_read();
@@ -146,4 +134,6 @@ char *argv[];
         case 'F': hard(buf.start, buf.len); break;
         default:  hard("garbled report", 14);
     }
+    /* shouldn't be able to reach here, but it shuts up a warning */
+    exit(0);
 }

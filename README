@@ -13,4 +13,7 @@ Send postings to
 
   mcfeely-l@systhug.com
 
-Installation instructions are in INSTALL.
+Installation instructions for installing from source are in INSTALL.
+
+If you are installing from RPM (recommended) there is some
+information in the HOWTO file.

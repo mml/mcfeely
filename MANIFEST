@@ -55,3 +55,6 @@ make-chdir-pl.c
 make-internal-pm.c
 snooze.c
 secretmaker.c
+test_comm
+hostcheck.pl
+serverslam.pl
