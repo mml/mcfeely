@@ -10,6 +10,9 @@ sub attempt_tasks() {
     my $i;
     my $task;
     my $now = time;
+    my @ntasks;
+
+    plog "welcome to the attempt_tasks program!";
 
     TASK: for ($i = 0; $i <= $#Tasks; ++$i) {
         $task = $Tasks[$i];
@@ -20,16 +23,21 @@ sub attempt_tasks() {
         # just attempted.  When the results come back from the spawner, they'll
         # either be removed from the action or reinserted into the queue.
         if ($task->[$TASK_NEXT_TRY] > $now) {
-            @Tasks = @Tasks[$i..$#Tasks];
+            push @ntasks, @Tasks[$i..$#Tasks];
             last TASK;
         }
 
-        next if $task->[$TASK_NDEPS] > 0;
-        plog "attempt task $task->[$TASK_INO] job $task->[$TASK_JOB]->[$JOB_INO]";
-        write_to_spawner $task->[$TASK_INO];
-        $task->[$TASK_NEXT_TRY] = $now;
-        ++$Tasks_in_progress;
+        if ($task->[$TASK_NDEPS] > 0) {
+            push @ntasks, $task;
+        } else {
+            plog "attempt task $task->[$TASK_INO] job $task->[$TASK_JOB]->[$JOB_INO]";
+            write_to_spawner $task->[$TASK_INO];
+            $task->[$TASK_NEXT_TRY] = $now;
+            ++$Tasks_in_progress;
+        }
     }
+
+    @Tasks = @ntasks;
 }
 
 1;
