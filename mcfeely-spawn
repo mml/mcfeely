@@ -1,6 +1,12 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
+# mcfeely-spawn
+# version 2
+# this is a rewrite to try and deal with strange file handling
+# in version 1 (by mml) and 1.5 (by cdent merging Spawner.pm into
+# mcfeely-spawn
+
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -20,129 +26,210 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+# first we will just open the pipe and read from it
+
 use strict;
-
-use McFeely::Internal;
-use POSIX;
-use IO::Select;
 use IO::Handle;
+use IO::Select;
 use IO::Pipe;
-use Fcntl;
-use Symbol;
+use POSIX qw(:signal_h :errno_h :sys_wait_h);
+use Getopt::Std;
 
-require 'chdir.pl';
+my %opt;
+getopts('dT:', \%opt);
 
-# get the file descriptors off the command line
-my $in  = shift;
-my $out = shift;
-my $sir = new IO::Handle; # sir was STDIN
-my $srw = new IO::Handle; # srw was STDOUT
-$sir->fdopen($in, "r")  or die "open SIR (fd $in) failed: $!\n";
-$srw->fdopen($out, "w") or die "open SRW (fd $out) failed: $!\n";
+# how many times should we be willing to fork
+# per time through the select loop
+my $Tasks_per_select = $opt{'T'};
+$Tasks_per_select    ||= 10;
 
+# in and out are the file descriptors passed to us from mcfeely-start
+my $in;
+my $out;
 
-# these hashes contain per task information
-# about filehandles, slots, the status of the fork
-# and any message that might be involved
-my %Fh;
-my %Slot;
-my %Stat;
-my %Msg;
+# these pipes will be filehandles on those file descriptors
+my $manage_pipe_read;
+my $manage_pipe_write;
 
-# the pipe on which we write to our children
-my $write_pipe;
+# a hande for the select loop
+my $select;
 
-$| = 1;
+# a buffer for data from mcfeely-manage
+my $Manage_read_buffer;
 
-# change directories to the top of the mcfeely tree so we 
-# can have reasonable access to the queue
-chdir_top() or bail("cannot chdir: $!");
+# hashes for holding information about our children
+my %Tasknum;       # the tasknumber
+my %Pipehandle;    # the filehandle of the pipe they report on
+my %Stat;          # the exit code
+my %Msg;           # the message from the comm
 
-# we need to establish the reaper as being there for our later
-# use when our children die
-$SIG{CHLD} = \&reaper;
+# when our children die, we must reap
+$SIG{'CHLD'} = \&reaper;
 
-# the subroutine in which we read the information and fork 
-# out the mcfeely-ttpc
-doit(\&launch_ttpc, \&pack_result);
-hard(0, "doit returned! $!");
-# we're done
-exit;
+# get in and out from the command line
+$in  = shift;
+$out = shift;
+die "bad arguments to start mcfeely-spawn\n"
+    unless defined $out;
 
-#### begin the subs, all the real action happens below
+# do an initialization try
+# these eval loops are not strictly necessary (especially here)
+# but they are good practice
+eval {
+    # create and connect the pipes from mcfeely-manage
+    $manage_pipe_read  = new IO::Handle;
+    $manage_pipe_write = new IO::Handle;
 
-sub soft {
-    my $slot   = shift;
-    my $status = 99;
-    
-    hardsoft_error($slot, $status, @_);
+    $manage_pipe_read->fdopen($in, "r") or
+        die "open manage_pipe_read failed: $!";
+    $manage_pipe_write->fdopen($out, "w") or
+        die "open manage_pipe_write failed: $!";
+
+    # make sure we are unbuffered where it counts
+    STDOUT->autoflush(1);
+    $manage_pipe_write->autoflush(1);
+};
+if ($@) {
+    # at this stage of the game we are only going to throw
+    # no catch
+    die "mcfeely-spawn initialization failed: $@\n";
 }
 
-sub hard {
-    my $slot   = shift;
-    my $status = 100;
-    
-    hardsoft_error($slot, $status, @_);
+# set up the select loop
+# being extra paranoid 
+eval {
+    $select = new IO::Select or die "creating select: $!";
+    $select->add($manage_pipe_read) or die "adding to select: $!";
+};
+if ($@) {
+    # again, no catch just yet
+    die "select loop initialization failed: $@\n";
 }
 
-sub hardsoft_error { 
-    my $slot   = shift;
-    my $status = shift;
-    my $msg    = join('', @_);
+# now loop forever 
+# inside this loop is the select loop which waits
+# for data from mcfeely-manage
+while (1) {
 
-    # Tack an end-of-transmission at the end of msg.
-    $msg .= "\0";
-    $msg .= pack 'c', 0x4;
+    # for reading and storing data from mcfeely-manage
+    my $line;
+    my @lines;
+    my $stage;
+    my $buf;
+    my $ok;
+    my @ready_to_read; # XXX: this is probably not necessary, 
 
-    $srw->print("$slot\0$status\0$msg");
-    exit $status;
-}
-
-# fork off mcfeely-ttpc
-sub launch_ttpc {
-    my $ino = shift;
-    chomp $ino;
+    # for dealing with getting information from children
     my $pid;
+    my $oldsigset;
+    my $sig_chld_set;
+    $sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
+    $oldsigset    = POSIX::SigSet->new;
 
-    if (!defined ( $pid = fork() )) {
-        # There was an error.
-        return($ino, undef);
-    } elsif ($pid == 0) {
-        # I am the child.
-        unless(open STDIN, "queue/task/$ino") {
-            print STDOUT "trouble opening queue/task/$ino: $!";
-            exit 100;
-        }
-            #or soft $ino, "trouble opening queue/task/$ino: $!";
-        #open(STDOUT, ">&main::WP')
-        # getting this next bit to work for some reason 
-        # requires the fileno, not the handle don't know why
-        my $write_pipe_no = $write_pipe->fileno();
-        unless(open(STDOUT, ">& $write_pipe_no")) {
-            print STDOUT "trouble duping STDOUT: $!";
-            exit 99;
-        }
-            #or soft $ino, "trouble duping STDOUT: $!";
-        close STDERR;
-        #open(STDERR, '>&main::WP')
-        #    or soft "trouble duping STDERR: $!";
+    # wait ten seconds or until the mcfeely-manage pipe
+    # had data
+    @ready_to_read = $select->can_read(10);
 
-        # start our client with the task number identifier
-        unless (exec 'bin/mcfeely-ttpc', $ino) {
-            print STDOUT "Couldn't exec tcpclient: $!";
-            exit 99;
+    # once we've decided to fall out of the select, let's go
+    # ahead and block CHLD signals about children
+    sigprocmask(SIG_BLOCK, $sig_chld_set, $oldsigset);
+
+    # check to see if there is a filehandle with data 
+    # or if we just fell through
+    if (scalar @ready_to_read > 0) {
+        # we have data
+
+        # clean up our $stage
+        $stage = '';
+        # read it in
+        eval {
+            $stage .= $buf while
+                (defined($ok = $manage_pipe_read->read($buf, 1024))
+                    and $ok > 0);
+            #if (defined($!) && $! != &POSIX::EWOULDBLOCK) {
+            if (defined($!) && $! != EWOULDBLOCK) {
+                die "read error: $!";
+            }
+        };
+        if ($@) {
+            die "error getting data from mcfeely-manage: $@\n";
         }
-    } else {
-        # I am the parent.
-        # close WP, my child is going to write on it not me.
-        #close main::WP;
-        $write_pipe->close();
-        return($ino, $pid);
     }
+
+    # add any buffered data we might have
+    $stage = $Manage_read_buffer . $stage;
+
+    #make the lines
+    if (defined($stage)) {
+        push(@lines, $&) while $stage =~ s/^.*\n//;
+    }
+        
+    # what's left in stage is incomplete data
+    $Manage_read_buffer = $stage;
+
+    # this is an experimental throttle
+    # we only want to do the first N things in
+    # @lines to avoid overloading the system
+    my @process_lines = ();
+    @process_lines = splice(@lines, 0, $Tasks_per_select);
+    my $go_back = join('', @lines);
+    $Manage_read_buffer = $go_back . $Manage_read_buffer;
+
+    # do stuff with the lines
+    foreach $line (@process_lines) {
+        # get rid of line feed
+        chomp($line);
+
+        print STDERR "mcfeely-spawn: processing $line\n" if $opt{'d'};
+
+        # go into the fork sub
+        # put this in an eval so that any dies in there
+        # we can deal with
+        eval {
+           process_manage_line($line);
+        };
+        if ($@) {
+            if ($@ =~ /^child: /) {
+                print STDOUT "child started but: $@\n";
+                exit 99;
+            } elsif ($@ = /^filehandles: /) {
+                # this is probably _not_ the way to do this
+                # but I can't think of another way to do it
+                # we want to slow things down, let's do it
+                # the hard way
+                print STDERR
+                    "mcfeely-spawn: filehandle issues going to sleep\n"
+                        if $opt{'d'};
+                sleep 10;
+                soft($line, "process_manage_line: $@");
+                next;
+            } else {
+                soft($line, "process_manage_line: $@");
+                next;
+            }
+        }
+
+    }
+    # deal with results that were gathered by the reaper
+    # stop block CHLD
+    sigprocmask(SIG_UNBLOCK, $sig_chld_set, $oldsigset);
+    foreach $pid (keys(%Stat)) {
+        my $results = create_results( 'task' => $Tasknum{$pid},
+                                      'status' => $Stat{$pid},
+                                      'msg'    => $Msg{$pid});
+        # print out the data or skip to the next one
+        if ($manage_pipe_write->print($results)) {
+            delete $Tasknum{$pid};
+            delete $Stat{$pid};
+            delete $Msg{$pid};
+        } else {
+            next;
+        }
+    }
+                                                 
 }
 
-# take the results from the mcfeely-ttpc and pass them pack up 
-sub pack_result {
+sub create_results {
     my %args = @_;
 
     # tack a \0 on the end of message so we can have multi
@@ -151,102 +238,58 @@ sub pack_result {
     # Tack an end-of-transmission at the end of msg.
     $args{msg} .= pack 'c', 0x4;
 
-    return("$args{slot}\0$args{status}\0$args{msg}");
+    return("$args{task}\0$args{status}\0$args{msg}");
 }
 
-sub doit {
-    # reference to the subroutine that is called when
-    # we want to fork
-    my $fork_sub = shift;
-    # reference to the subrouting that is called that
-    # reads the results from the child
-    my $pack_sub = shift;
 
-    my $buf;
-    my $line;
-    my $ok;
+
+sub process_manage_line {
+    my $tasknum = shift;
     my $pid;
-    my $oldsigset;
-    my $sig_chld_set;
-    my $slot;
-    my @ready_to_read;
 
-    $srw->autoflush(1);
+    # create the pipe
+    # IO::Handle does some weird shit sometimes so we need
+    # to catch death here
+    my $read_pipe  = new IO::Handle ||
+        die "filehandles: unable to create read_pipe: $!";
+    my $write_pipe = new IO::Handle ||
+        die "filehandles: unable to create write_pipe: $!";
+    
+    my $pipe1      = new IO::Pipe($read_pipe, $write_pipe);
+    if (!defined($pipe1)) {
+        die "filehandles: unable to create pipe1: $!";
+    }
 
-    # let the forthcoming select loop know that it is STDIN (sort of)
-    # that we'll be waiting on
-    my $select = new IO::Select();
-    $select->add($sir);
-
-    $sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
-    $oldsigset = POSIX::SigSet->new;
-
-    # loop
-    while (1) {
-        my $stage;
-        my @lines;
-        # may need to do some tricks with blocking here
-
-        # wait for some data or a signal
-        $sir->blocking(1);
-        @ready_to_read = $select->can_read(10); #XXX
-
-        # read instructions
-        $sir->blocking(0);
-        $stage .= $buf
-            while (defined($ok = sysread $sir, $buf, 1024)
-                and $ok > 0);
-        return unless $! == POSIX::EWOULDBLOCK;
-
-        # load lines
-        if (defined $stage) {
-            push @lines, $& while $stage =~ s/^.*\n//;
-        }
-
-        # follow instructions
-        while ($line = shift @lines) {
-
-            # create the pipe that we will talk to kids with
-            my $read_pipe  = new IO::Handle;
-            $write_pipe = new IO::Handle;
-            my $pipe1   = new IO::Pipe($read_pipe, $write_pipe);
-            if (!defined($pipe1)) {
-                soft 0, "unable to create pipe: $!";
-            }
-
-            # keep track of children
-            sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
-
-            # and call the fork_sub
-            ($slot, $pid) = &$fork_sub($line);
-
-            # if $pid is undef then for some reason we could
-            # not fork and if that's the case we need to let
-            # the other know that badness is afoot and they
-            # should try later
-            if (!defined($pid)) {
-                soft $slot, "unable to fork: $!";
-            }
-
-            # save away the informatin about the task based
-            # used the pid as the key
-            $Slot{$pid} = $slot;
-            $Fh{$pid} = $read_pipe;
-
-            # continue keeping hold of children
-            sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);
-        }
-
-        # dig the results
-        PID: foreach $pid (keys %Stat) {
-            $srw->print(&$pack_sub(slot => $Slot{$pid},
-                                  status => $Stat{$pid},
-                                  msg => $Msg{$pid}));
-            delete $Slot{$pid};
-            delete $Stat{$pid};
-            delete $Msg{$pid};
-        }
-
+    # fork fork fork
+    if (!defined( $pid = fork() )) {
+        die "unable to fork: $!";
+    } elsif ($pid == 0) {
+        # I'm the kid
+        # dup STDOUT onto a pipe that we are going to associate
+        # with this kid
+        my $write_pipe_no = $write_pipe->fileno() || die
+            "child: can't get fileno() of write_pipe: $!";
+        open(STDOUT, ">& $write_pipe_no") || die
+            "child: unable to dup write_pipe to STDOUT: $!";
+        # close the pipes to mcfeely-manage
+        $manage_pipe_read->close() || die
+            "child: trouble closing the manage_pipe_read: $!";
+        $manage_pipe_write->close() || die
+            "child: trouble closing the manage_pipe_write: $!";
+        # open STDIN as the task
+        open(STDIN, "queue/task/$tasknum") || die
+            "child: trouble openning queue/task/$tasknum: $!";
+        # and exec
+        #close STDERR;
+        exec 'bin/mcfeely-ttpc', $tasknum || die
+            "child: unable to launch mcfeely-ttpc: $!";
+    } else {
+        # parent
+        # close the write pipe and record some info
+        # for later reaping
+        $write_pipe->close();
+        $Tasknum{$pid}    = $tasknum;
+        $Pipehandle{$pid} = $read_pipe;
     }
 }
 
@@ -255,32 +298,72 @@ sub reaper {
     my $fh;
     my $read_count;
 
-    while (($baby = waitpid(-1, &WNOHANG)) > 0) {
-        my $buf;
-        $fh = $Fh{$baby}; # XXX: Oi!
-        $Stat{$baby} = ($? >> 8);
-        $fh->blocking(1);
-        $read_count = $fh->read($buf, 1024);
-        if (!defined($read_count)) {
-            delete $Fh{$baby};
-            $fh->close();
-            hard($baby, "bad read from ttpc: $!");
-        } elsif ($read_count == 0) {
-            delete $Fh{$baby};
-            $fh->close();
-            hard($baby, "EOF on read from ttpc");
-        } else {
-            $Msg{$baby} = "$buf";
-            delete $Fh{$baby};
-            $fh->close();
-        }
+    while (($baby = waitpid(-1, WNOHANG)) > 0) {
+
+        if (exists($Pipehandle{$baby})) {
+            my $buf;
+
+            print STDERR "mcfeely-spawn: $Tasknum{$baby} responding\n"
+                if $opt{'d'};
+
+            $fh = $Pipehandle{$baby};
+
+            # get the exit code
+            $Stat{$baby} = ($? >> 8);
+
+            # read the report from the child
+            $fh->blocking(1);
+            $read_count = $fh->read($buf, 1024);
+
+            if (!defined($read_count)) {
+                # something went wrong during the read
+                delete $Pipehandle{$baby};
+                $fh->close();
+                hard($Tasknum{$baby}, "bad read from ttpc: $!");
+            } elsif ($read_count == 0) {
+                # the other end is not there, this is unexpected
+                delete $Pipehandle{$baby};
+                $fh->close();
+                hard($Tasknum{$baby}, "EOF on read from ttpc");
+            } else {
+                # cool, store the mesage
+                $Msg{$baby} = "$buf";
+                delete $Pipehandle{$baby};
+                $fh->close();
+            }
+        } 
+        # else we got a child that we don't know about, odd
     }
 }
 
-sub END {
-    open OUT, ">/tmp/mcfeely-spawn.$$";
-    print OUT "I've died\n";
-    print OUT "my latest bang: $!\n";
-    close OUT;
+sub soft {
+    my $task   = shift;
+    my $status = 99;
+    hardsoft_error($task, $status, @_);
 }
-    
+
+sub hard {
+    my $task   = shift;
+    my $status = 100;
+    print STDERR "doing a hard for $task: @_\n" if $opt{'d'};
+    hardsoft_error($task, $status, @_);
+}
+
+sub hardsoft_error {
+    my $task   = shift;
+    my $status = shift;
+    my $msg    = join('', @_);
+
+    # make an end of transmission message
+    $msg       .= "\0";
+    $msg       .= pack 'c', 0x4;
+
+
+    # send it down the pipe
+    $manage_pipe_write->print("$task\0$status\0$msg") ||
+        die "can't write hardsoft_error to mcfeely-manage: $!\n";
+
+    # XXX: but do we exit here? no, I guess not, we should
+    # only exit when we want to DIE
+    return;
+}
