@@ -330,6 +330,9 @@ sub _write_dependencies {
     my $waiter;
     my $i;
 
+    @tasks = $self->list_tasks;
+    foreach $task (@tasks) { $ndeps{$task} = 0 }
+
     foreach $dep (@{$self->{deps}}) {
         ($key, @vals) = @$dep;
         $ndeps{$key} += @vals;
@@ -337,8 +340,6 @@ sub _write_dependencies {
             push(@{$waiters{$task}}, $key);
         }
     }
-    
-    @tasks = $self->list_tasks;
 
     for ($i = 0; $i <= $#tasks; ++$i) { $index{$tasks[$i]} = $i }
 

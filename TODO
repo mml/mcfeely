@@ -9,3 +9,6 @@ o abstract the mailing in mail_report so it is not dependendent on
   /bin/mail but instead uses something like Mail::Send or whatever
 o in mcfeely-ttpd.c a write is made to the the pipe when 'program not
   found'. It doesn't say what program. It should.
+o BUG: If the client side does not return any exit code at all, the
+  server side seems to get confused, neither reporting the problem,
+  trying again, or failing the task.
