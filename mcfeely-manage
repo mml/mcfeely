@@ -28,7 +28,7 @@ require 'attempt_tasks.pl';
 require 'do_select.pl';
 require 'read_results.pl';
 
-&chdir-top or bail("Could not chdir: $!; exiting.");
+&chdir_top or bail("Could not chdir: $!; exiting.");
 chdir 'queue' or bail("Could not chdir: $!; exiting.");
 
 plog("starting");
