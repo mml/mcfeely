@@ -68,7 +68,7 @@ TARFILE		= $(DIST).tar.gz
 SPECFILE	= $(PROJECT).spec
 RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-client-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-server-$(VERSION)-1.i386.rpm
 SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
-FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva/RPMS/i386
+FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva
 WWWLOC		= www.kiva.net:~systhug/www/mcfeely
 
 .PHONY: all install rpminstall dist rpm ftp clean
@@ -166,8 +166,10 @@ do-rpm: $(TARFILE) $(SPECFILE)
 	cp $(TARFILE) $(RPMDIR)/SOURCES/
 	rpm -ba $(RPMDIR)/SPECS/$(SPECFILE)
 
-ftp: $(RPMFILE)
-	scp $(RPMFILE) $(FTPLOC)
+ftp: $(RPMFILE) $(SRPMFILE)
+	chmod 444 $(RPMFILE) $(SRPMFILE) $(TARFILE)
+	scp $(RPMFILE) $(FTPLOC)/RPMS/i386
+	scp $(SRPMFILE) $(FTPLOC)/SRPMS
 
 www: $(RPMFILE) $(TARFILE) $(SRPMFILE)
 	chmod 444 $(RPMFILE) $(SRPMFILE) $(TARFILE)
