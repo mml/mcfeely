@@ -170,6 +170,7 @@ ftp: $(RPMFILE)
 	scp $(RPMFILE) $(FTPLOC)
 
 www: $(RPMFILE) $(TARFILE) $(SRPMFILE)
+	chmod 444 $(RPMFILE) $(SRPMFILE) $(TARFILE)
 	scp $(RPMFILE) $(WWWLOC)/dist
 	scp $(SRPMFILE) $(WWWLOC)/dist
 	scp $(TARFILE) $(WWWLOC)/dist
