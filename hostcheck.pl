@@ -1,22 +1,22 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
-# $Id: hostcheck.pl,v 1.3.2.1 2000/06/20 15:56:56 cdent Exp $
+# $Id: hostcheck.pl,v 1.3.2.2 2000/06/20 23:47:50 cdent Exp $
 
 # mcfeely-task-test
 # inject a single task
 # demo code
 
 # adjust to locacation of McFeely.pm
-use lib '/home/cdent/src/mcfeely.spawner';
+#use lib '/home/cdent/src/mcfeely.spawner';
 
 use McFeely;
 use strict;
 
 # initialize some variables we'll use later
-my $host = '';
-my $comm = '';
-my @args = ();
+my $host = $ARGV[0];
+my $comm = $ARGV[1];
+my @args = $ARGV[2];
 
 
 # fill those variables
@@ -28,8 +28,8 @@ my $job = new McFeely::Job;
 
 # set the desc, snot and fnot for the job
 $job->desc('single task inject');
-$job->snot('cdent@kiva.net');
-$job->fnot('cdent@kiva.net');
+$job->snot(scalar getpwuid($<));
+$job->fnot(scalar getpwuid($<));
 
 # make a task, testing the inputs and trying again until we get
 # right

@@ -1,3 +1,4 @@
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -19,14 +20,21 @@
 
 # wait on the trigger and other filehandles
 sub do_select() {
-    sysopen(TRIGGER, 'trigger', O_RDONLY|O_NONBLOCK)
-        or plog "Cannot open trigger: $!";
-    fcntl(TRIGGER, F_SETFL, fcntl(TRIGGER, F_GETFL, 0) & O_NONBLOCK)
-        or plog "Cannot fcntl trigger: $!";
-    fd_set(TRIGGER, $rin);
-    select($rout=$rin, undef, undef, SLEEPYTIME);
-    close(TRIGGER);
-}
+    # $select is global in mcfeely-manage's name space
 
+    my $trigger = new IO::File;
+
+    # open the trigger without blocking
+    $trigger->open('trigger', O_RDONLY|O_NONBLOCK)
+        or plog "Cannot open trigger: $!";
+
+    # wait for activity
+    $select->add($trigger);
+    $select->can_read(SLEEPYTIME());
+
+    plog "do_select: past the select";
+    $select->remove($trigger);
+    close($trigger);
+}
 
 1;

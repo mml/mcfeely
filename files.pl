@@ -19,11 +19,11 @@
 
 # usage: files(DIRHANDLE)
 # returns files like readdir, but it skips . and ..
-sub files(*) {
-    my $glob = shift;
+sub files($) {
+    my $handle = shift;
 
-    return(grep { !/^\.\.?$/ } readdir $$glob) if wantarray;
-    while ($_ = readdir $$glob) { return $_ unless /^\.\.?$/ }
+    return(grep { !/^\.\.?$/ } readdir $handle) if wantarray;
+    while ($_ = readdir $handle) { return $_ unless /^\.\.?$/ }
     return undef;
 }
 

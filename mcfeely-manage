@@ -20,23 +20,34 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use strict;
 use McFeely::Internal;
 use Fcntl;
 use IO::File;
+use IO::Handle;
+use IO::Select;
 
-use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job $rout $rin );
+use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job
+             $rout $rin $srr $siw $select);
+
+$select = new IO::Select;
 
 my $in = shift;
 my $out = shift;
 
-open SRR, "<&=$in" or die "open SRR (fd $in): $!\n";
-$rout = $rin = '';
-fd_set(SRR, $rin);
-open SIW, ">&=$out" or die "open SIW (fd $out): $!\n";
-select SIW; $| = 1; select STDOUT; $| = 1;
+$srr = new IO::Handle;
+$siw = new IO::Handle;
 
-require 'chdir.pl';
+$srr->fdopen($in, "r")  or die "open SRR (fd $in) failed: $!\n";
+$siw->fdopen($out, "w") or die "open SIW (fd $out) failed: $!\n";
+
+$select->add($srr);
+
+$siw->autoflush(1);
+STDOUT->autoflush(1);
+
 require 'const.pl';
+require 'chdir.pl';
 require 'log.pl';
 require 'safe_to_exit.pl';
 require 'files.pl';
@@ -46,14 +57,14 @@ require 'attempt_tasks.pl';
 require 'do_select.pl';
 require 'read_results.pl';
 
-&chdir_top or bail("Could not chdir: $!; exiting.");
+chdir_top() or bail("Could not chdir: $!; exiting.");
 chdir 'queue' or bail("Could not chdir: $!; exiting.");
 
 plog("starting");
 
 scan_job('job', 0);
 
-until ($Asked_to_exit && safe_to_exit) {
+until ($Asked_to_exit && safe_to_exit() ) {
     scan_job('newj', 1);
     attempt_tasks();
     do_select();
@@ -62,10 +73,4 @@ until ($Asked_to_exit && safe_to_exit) {
 
 plog("exiting");
 
-sub fd_set(*\$) {
-    my $fd = fileno ${shift @_};
-    my $setref = shift;
-
-    vec($$setref, $fd, 1) = 1;
-}
 

@@ -1,3 +1,4 @@
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -21,7 +22,7 @@
 sub write_to_spawner($) {
     my $ino = shift;
 
-    print SIW "$ino\n";
+    $siw->print("$ino\n");
 }
 
 # attempt all tasks whose times have come
@@ -47,7 +48,8 @@ sub attempt_tasks() {
         if ($task->[$TASK_NDEPS] > 0) {
             push @ntasks, $task;
         } else {
-            plog "$task->[$TASK_JOB]->[$JOB_INO]:$task->[$TASK_INO] starting transfer to $task->[$TASK_HOST]";
+            plog "$task->[$TASK_JOB]->[$JOB_INO]:$task->[$TASK_INO] " .
+                 "starting transfer to $task->[$TASK_HOST]";
             write_to_spawner $task->[$TASK_INO];
             $task->[$TASK_NEXT_TRY] = $now;
             ++$Tasks_in_progress;

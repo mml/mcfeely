@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -19,7 +20,9 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use strict;
 use McFeely::Internal;
+use IO::File;
 
 require 'chdir.pl';
 require 'log.pl';
@@ -35,10 +38,10 @@ my $AGE_SECONDS = 3600;
 # usage: files(DIRHANDLE)
 # returns files like readdir, but it skips . and ..
 sub files(*) {
-    my $glob = shift;
+    my $handle = shift;
 
-    return(grep { !/^\.\.?$/ } readdir $$glob) if wantarray;
-    while (defined($_ = readdir $$glob)) { return $_ unless /^\.\.?$/ }
+    return(grep { !/^\.\.?$/ } readdir $handle) if wantarray;
+    while (defined($_ = readdir $handle)) { return $_ unless /^\.\.?$/ }
     return undef;
 }
 
@@ -49,8 +52,12 @@ sub do_task($) {
     my $num = shift;
     my @waiters;
 
+    my $flag;
+    my $ndeps;
+    my $waiter;
+
     open TASK, "task/$num" or die "task/$num: $!\n";
-    $file = join '', <TASK>;
+    my $file = join '', <TASK>;
     close TASK;
     my @file = split /\0/, $file;
     open INFO, "info/$num" or die "info/$num: $!\n";
@@ -71,20 +78,32 @@ sub do_task($) {
 sub scan_jobs($) {
     my $dir = shift;
 
-    opendir JOBD, $dir or die "$dir: $!\n";
+    my $file;
 
-    JOB: while (defined($file = files(JOBD))) {
-        open JOB, "$dir/$file" or die "$dir/$file: $!\n";
-        $ctime = (stat JOB)[10];
+    my $dirhandle  = new IO::Handle;
+    my $jobhandle  = new IO::File;
+    my $deschandle = new IO::File;
+    opendir $dirhandle, $dir or die "$dir: $!\n";
+
+    JOB: while (defined($file = files($dirhandle))) {
+        my $ctime;
+        my $failed;
+        my $desc;
+        my $snot;
+        my $fnot;
+        my $task;
+
+        open $jobhandle, "$dir/$file" or die "$dir/$file: $!\n";
+        $ctime = (stat $jobhandle)[10];
         if ($Watcher) {
             next JOB unless ($ctime < (time - $AGE_SECONDS));
         }
         $ctime = localtime $ctime;
-        read(JOB, $failed, 1);
+        read($jobhandle, $failed, 1);
         $failed = unpack('C', $failed);
-        open DESC, "desc/$file" or die "desc/$file: $!\n";
-        $desc = join '', <DESC>;
-        close DESC;
+        open $deschandle, "desc/$file" or die "desc/$file: $!\n";
+        $desc = join '', <$deschandle>;
+        close $deschandle;
         open SNOT, "snot/$file" or die "snot/$file: $!\n";
         $snot = join '', <SNOT>;
         close SNOT;
@@ -93,7 +112,7 @@ sub scan_jobs($) {
         close FNOT;
         print "#$file ", ($failed ? '(failed) ' : ''), "$ctime\n",
               "        $desc  $fnot  $snot\n";
-        while (read(JOB, $task, 4) == 4) {
+        while (read($jobhandle, $task, 4) == 4) {
             $task = unpack('L', $task);
             do_task $task
         }

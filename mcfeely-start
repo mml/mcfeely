@@ -20,33 +20,41 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
-use McFeely::Internal;
 use strict;
+use McFeely::Internal;
 use Fcntl;
+use IO::Handle;
+use IO::Pipe;
 
 require 'chdir.pl';
 require 'log.pl';
 
-&chdir_top or &bail("Could not chdir: $!");
+chdir_top() or bail("Could not chdir: $!");
 
-pipe SIR, SIW;
-pipe SRR, SRW;
-fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK ) || 
-	die "can't fcntl SRR: $!\n";
+my $sir = new IO::Handle;
+my $siw = new IO::Handle;
+my $srr = new IO::Handle;
+my $srw = new IO::Handle;
+my $pipe1 = new IO::Pipe($sir, $siw);
+my $pipe2 = new IO::Pipe($srr, $srw);
+
+$srr->blocking(0);
 
 my $pid = fork;
 if (!defined $pid) {
     die "cannot fork: $!\n";
 } elsif ($pid == 0) {
-    close SIW; close SRR;
-    open STDIN, '<&SIR';
-    open STDOUT, '>&SRW';
-    exec 'bin/mcfeely-spawn';
+    $siw->close();
+    $srr->close();
+    $sir->fcntl(F_SETFD, 0);
+    $srw->fcntl(F_SETFD, 0);
+    exec 'bin/mcfeely-spawn', $sir->fileno(), $srw->fileno();
 
 }
 
-fcntl(SRR, F_SETFD, 0);
-fcntl(SIW, F_SETFD, 0);
+$srr->fcntl(F_SETFD, 0);
+$siw->fcntl(F_SETFD, 0);
 
-close SIR; close SRW;
-exec 'bin/mcfeely-manage', fileno SRR, fileno SIW;
+$sir->close();
+$srw->close();
+exec 'bin/mcfeely-manage', $srr->fileno(), $siw->fileno();

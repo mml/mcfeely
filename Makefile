@@ -87,6 +87,8 @@ install: all PERLDIR
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 $$i `./topdir`/bin ;\
 	done
 
+	install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 test_comm `./topdir`/comm
+
 	cd $(ROOT)/`./topdir`/bin ;ln -sf mcfeely-qread mcfeely-qwatch
 
 	for i in '' /pid /task /info /desc /newj /job /fnot /snot /rep; do \
@@ -116,9 +118,12 @@ rpminstall: all PERLDIR
 	install -m 4510 mcfeely-queue $(ROOT)/`./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
-	  mcfeely-ttpc mcfeely-ttpd snooze secretmaker; do \
+	  mcfeely-ttpc mcfeely-ttpd snooze secretmaker \
+	  hostcheck.pl; do \
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
+
+	install -m 0550 test_comm $(ROOT)`./topdir`/comm
 
 	cd $(ROOT)/`./topdir`/bin ;ln -sf mcfeely-qread mcfeely-qwatch
 

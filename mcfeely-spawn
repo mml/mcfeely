@@ -32,6 +32,15 @@ use Symbol;
 require 'chdir.pl';
 require 'log.pl';
 
+# get the file descriptors off the command line
+my $in  = shift;
+my $out = shift;
+my $sir = new IO::Handle; # sir was STDIN
+my $srw = new IO::Handle; # srw was STDOUT
+$sir->fdopen($in, "r")  or die "open SIR (fd $in) failed: $!\n";
+$srw->fdopen($out, "w") or die "open SRW (fd $out) failed: $!\n";
+
+
 # these hashes contain per task information
 # about filehandles, slots, the status of the fork
 # and any message that might be involved
@@ -57,7 +66,7 @@ doit(\&launch_ttpc, \&pack_result);
 # we're done
 exit;
 
-sub soft { print STDOUT "@_\n"; exit 99 }
+sub soft { $srw->print("@_\n"); exit 99 }
 
 # fork off mcfeely-ttpc
 sub launch_ttpc {
@@ -118,12 +127,14 @@ sub doit {
     my @lines;
     my @ready_to_read;
 
-    select STDOUT; $| = 1;
+    #STDOUT->autoflush(1);
+    $srw->autoflush(1);
+
 
     # let the forthcoming select loop know that it is STDIN (sort of)
     # that we'll be waiting on
     my $select = new IO::Select();
-    $select->add(\*STDIN);
+    $select->add($sir);
 
     $sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
     $oldsigset = POSIX::SigSet->new;
@@ -131,13 +142,13 @@ sub doit {
     # loop
     while (1) {
         # wait for some data or a signal
-        STDIN->blocking(1);
-        @ready_to_read = $select->can_read(240);
+        $sir->blocking(1);
+        @ready_to_read = $select->can_read(10); #XXX
 
         # read instructions
-        STDIN->blocking(0);
+        $sir->blocking(0);
         $stage .= $buf
-            while (defined($ok = sysread STDIN, $buf, 1024)
+            while (defined($ok = sysread $sir, $buf, 1024)
                 and $ok > 0);
         return unless $! == POSIX::EWOULDBLOCK;
 
@@ -158,9 +169,9 @@ sub doit {
 
         # dig the results
         PID: foreach $pid (keys %Stat) {
-            print &$pack_sub(slot => $Slot{$pid},
-                             status => $Stat{$pid},
-                             msg => $Msg{$pid});
+            $srw->print(&$pack_sub(slot => $Slot{$pid},
+                                  status => $Stat{$pid},
+                                  msg => $Msg{$pid}));
             delete $Slot{$pid};
             delete $Stat{$pid};
             delete $Msg{$pid};

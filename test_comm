@@ -1,0 +1,15 @@
+#!/usr/bin/perl -T
+
+# $Id: test_comm,v 1.1.2.1 2000/06/20 23:47:50 cdent Exp $
+# $Source: /home/mml/Projects/mcfeely/scratch/mcfeely-mirror/test_comm,v $
+# A null task to test and see if McFeely is working
+# <cdent@kiva.net> 2000.0131
+# - it just seemed like a good idea
+
+use McFeely::Task ':all';
+
+my $arg = shift;
+
+ok "arg $arg is present" if ($arg !~ /^$/);
+hard "no arg provided: ";
+

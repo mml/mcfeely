@@ -59,3 +59,51 @@ things run:
    /opt/mcfeely/bin/mcfeely-start
 
 This program will log to STDERR so you may want to catch that.
+
+For the client side you need to run mcfeely-ttpd, it also logs to
+STDERR. The simplest thing to do is run it from inetd. Add the
+following to /etc/services:
+
+ttp2            757/tcp                         # mcfeely task transfer
+
+and the following to /etc/inetd.conf:
+
+ttp2    stream tcp      nowait  root   /opt/mcfeely/bin/mcfeely-ttpd \
+  mcfeely-ttpd
+
+and HUP inetd.
+
+In /opt/mcfeely/control create a file called 'hosts' that is owned by
+root and is 644. In there put the information about the mcfeely
+clients.
+
+saliva          saliva   757        206.97.64.58
+saliva.kiva.net saliva   757        206.97.64.58
+
+The fields are client, server, port, secret-file. By convention, the
+secret-file is the IP of the client. (Replace 'saliva' with your
+host). Newer versions of the McFeely API do things based on full
+hostname so putting both the short name and the long name in the hosts
+file is a good idea.
+
+Next, we need to create a secret that is to be shared between the
+client and the server. A program, /opt/mcfeely/bin/secretmaker, will
+create a file called newsecret in the current directory. Copy that to
+/opt/mcfeely/control/mysecret and
+/opt/mcfeely/control/secrets/<secret-file-name>.
+
+These files should be owned by root and group mcfeely, mode 640.
+
+Testing
+
+In one window start up mcfeely by running this command (as root):
+
+  /opt/mcfeely/bin/mcfeely-start
+
+In another window run:
+
+  /opt/mcfeely/bin/hostcheck.pl
+
+Give your local client's name as the host and test_comm as the comm:
+
+

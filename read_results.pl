@@ -1,3 +1,4 @@
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -102,16 +103,19 @@ sub finish_job($) {
     my $job = shift;
     my $tasknum;
 
+    my $jobhandle = new IO::File;
+
     mail_report $job->[$JOB_INO], $job->[$JOB_FAILED];
 
-    open JOB, "job/$job->[$JOB_INO]" or plog "Could not open job/$job: $!";
-    seek JOB, 1, 1;
-    while (job_read_task(JOB, $tasknum)) {
+    $jobhandle->open("job/$job->[$JOB_INO]") or
+        plog "Could not open job/$job: $!";
+    seek $jobhandle, 1, 1;
+    while (job_read_task($jobhandle, \$tasknum)) {
         foreach (qw(task info)) {
             unlink "$_/$tasknum" or plog "Could not unlink $_/$tasknum: $!";
         }
     }
-    close JOB;
+    close $jobhandle;
     foreach (qw(fnot snot rep desc job)) {
         unlink "$_/$job->[$JOB_INO]" or plog "Could not unlink $_/$job->[$JOB_INO]: $!";
     }
@@ -150,7 +154,7 @@ sub walk_waiters(&$$) {
         $waiter = task_lookup $waitino;
         walk_waiters($thunk, $waiter, $depth);
     }
-    $info->close;
+    $info->close();
 }
 
 # Harmless side effect: completed tasks have NDEPS set to -1.
@@ -178,12 +182,14 @@ sub defunct_waiters($) {
 sub task_flag_done($) {
     my $ino = shift;
 
-    open INFO, "+< info/$ino" or do {
+    my $info = new IO::File;
+
+    $info->open("+< info/$ino") or do {
         plog "trouble: could not open info/$ino: $!";
         return;
     };
-    print INFO pack('c', 1);
-    close INFO;
+    $info->print(pack('c', 1));
+    $info->close();
 }
 
 # read the results from the spawner
@@ -193,9 +199,9 @@ sub read_results() {
 
     # Some of the packed data might resemble an EOT (ascii 4) so
     # we have to count the bytes.
-    read SRR, $line, $TASK_NUM_LENGTH;
+    $srr->read($line, $TASK_NUM_LENGTH);
     $num = unpack 'L', $line;
-    read SRR, $line, $TASK_CODE_LENGTH;
+    $srr->read($line, $TASK_CODE_LENGTH);
     $code = unpack 'c', $line;
 
     # Now we can treat the rest normally. But we look for EOT instead
@@ -203,7 +209,8 @@ sub read_results() {
     # Preserve the seperator before we change it.
     $old_sep = $/;
     $/ = pack 'c', 0x4;
-    chomp($msg = <SRR>);    
+    #chomp($msg = <SRR>);    
+    chomp($msg = <$srr>);    
     $/ = $old_sep;
 
     $task = task_lookup $num;
