@@ -149,6 +149,8 @@ sub read_results() {
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     } elsif ($code eq $TASK_DEFERRAL_CODE) {
+        my $job = $task->[$TASK_JOB];
+
         plog "$job->[$JOB_INO]:$num deferral: $msg";
         # exponential backoff stolen from djb
         $task->[$TASK_NEXT_TRY] =
