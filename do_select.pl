@@ -4,6 +4,7 @@ sub do_select() {
         or plog "Cannot open trigger: $!";
     fcntl(TRIGGER, F_SETFL, fcntl(TRIGGER, F_GETFL, 0) & O_NONBLOCK)
         or plog "Cannot fcntl trigger: $!";
+    FD_SET(TRIGGER, $rin);
     select($rout=$rin, undef, undef, SLEEPYTIME);
     close(TRIGGER);
 }
