@@ -51,3 +51,4 @@ MCUSER
 MCGROUP
 ROOTUSER
 QGROUP
+make-chdir-pl.c
