@@ -72,6 +72,7 @@ Matt Liggett, mml@pobox.com
 package McFeely::Job;
 use IO::Pipe;
 use strict;
+use McFeely;
 
 sub new {
     my $class = shift;
@@ -159,7 +160,7 @@ sub enqueue {
         open STDIN, "<&=" . $pipe0->fileno;
         open STDOUT, "<&=" . $pipe1->fileno;
         open STDERR, "<&=" . $pipe2->fileno;
-        exec '/home/mliggett/mcfeely-test/bin/mcfeely-queue';
+        exec($McFeely::TOPDIR.'/bin/mcfeely-queue');
         die; # XXX: how to better report diagnostics here?
     } else {
         # error
