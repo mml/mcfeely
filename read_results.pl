@@ -112,6 +112,8 @@ sub defunct_waiters($) {
         unless ($task->[$TASK_DEFUNCT]) {
             $task->[$TASK_DEFUNCT] = 1;
             --$job->[$JOB_NTASKS];
+            report $job->[$JOB_INO],
+                "task $task->[$TASK_INO]: defuncted due to failure of dependent task";
         }
     } $_[0], -1;
 }
