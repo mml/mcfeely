@@ -3,12 +3,13 @@
 
 SOURCES	= attempt_tasks.pl do_select.pl files.pl jobs.pl log.pl \
 	  mcfeely-manage mcfeely-queue.c mcfeely.h \
-	  read_results.pl safe_to_exit.pl tasks.pl hostport.c hostport.h mcfeely-ttpc.c
+	  read_results.pl safe_to_exit.pl tasks.pl hostport.c hostport.h mcfeely-ttpc.c \
+	  exit-codes.h
 
 OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	  copy_bytes.o safe_read.o safe_write.o mcfeely-ttpc.o hostport.o
 
-TARGETS	= mcfeely-queue test-queue mcfeely-ttpc
+TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd
 
 CC	= gcc
 #CFLAGS	= -Wall -O6
@@ -31,6 +32,11 @@ mcfeely-ttpc: mcfeely-ttpc.o hostport.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LOADLIBES) -lknetstring
 
 mcfeely-ttpc.o: hostport.h
+
+mcfeely-ttpd: mcfeely-ttpd.o
+	$(CC) $(LDFLAGS) $^ -o $@ $(LOADLIBES) -lknetstring
+
+mcfeely-ttpd.o: exit-codes.h mcfeely.h
 
 tags: *.c *.h
 	ctags *.c *.h
