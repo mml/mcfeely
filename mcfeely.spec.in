@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.10 1999/08/02 21:23:53 ahosey Exp $
+# $Id: mcfeely.spec.in,v 1.11 1999/08/06 18:16:00 ahosey Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -73,6 +73,12 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/lib
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely.pm
+%attr(- @ROOTUSER@ @QGROUP@)  %dir @PERLDIR@/McFeely
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Internal.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Job.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Metatask.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Task.pm
 
 %files server
 %attr(- @MCUSER@   @QGROUP@ )      @TOPDIR@/bin/mcfeely-queue
@@ -93,12 +99,6 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/snot
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
 %attr(- @MCUSER@   @MCGROUP@)      @TOPDIR@/queue/trigger
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely.pm
-%attr(- @ROOTUSER@ @QGROUP@)  %dir @PERLDIR@/McFeely
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Internal.pm
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Job.pm
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Metatask.pm
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Task.pm
 
 %files client
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm

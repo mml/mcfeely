@@ -31,6 +31,12 @@ McFeely::Task - Perl class that represents McFeely tasks.
   $job->add_dependencies($task2->requires($task1));
   $job->enqueue or die $job->errstr, "\n";
 
+  use McFeely::Task ':all';
+  ...
+  ok 'Task complete, exiting.';
+  hard 'Task failed, don't try again.';
+  soft 'Temporary failure, defer execution til later.';
+
 =head1 DESCRIPTION
 
 McFeely tasks.
@@ -49,6 +55,21 @@ Returns a REQUIREMENT.  This requirement can then be fed to the
 C<McFeely::Job> C<add_dependencies> method to add this requirement to
 a given job.
 
+=item hard ( [MESSAGE] )
+
+Logs MESSAGE, if provided, then returns with the EXIT_HARD code,
+meaning the task has suffered a permanent failure.
+
+=item soft ( [MESSAGE] )
+
+Logs MESSAGE, if provided, then returns with the EXIT_SOFT code,
+meaning the task encountered a temporary problem and execution should
+be retried later.
+
+=item ok ( [MESSAGE] )
+
+Logs MESSAGE, if provided, then returns with the EXIT_OK code.
+
 =back
 
 =head1 SEE ALSO
@@ -56,15 +77,25 @@ a given job.
 L<McFeely::Job>,
 L<McFeely::Metatask>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Matt Liggett, mml@pobox.com
+Matt Liggett <mml@pobox.com>, Adrian Hosey <ahosey@systhug.com>
 
 =cut
 
 package McFeely::Task;
 use McFeely;
 use strict;
+use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
+
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw ( EXIT_HARD EXIT_SOFT EXIT_OK hard soft ok plog );
+%EXPORT_TAGS = ( all => \@EXPORT_OK );
+
+sub EXIT_HARD() { 100 }
+sub EXIT_SOFT() {  99 }
+sub EXIT_OK()   {   0 }
 
 sub new {
     my $class = shift;
@@ -74,5 +105,26 @@ sub new {
 
 # returns ref to list: (SELF, REQUIRED_TASK_1, REQUIRED_TASK_2, ...)
 sub requires { [@_] }
+
+# Send a message to STDOUT where it will (usually) be captured for logging.
+sub plog(@) { print STDOUT @_, "\n" }
+
+# Log a message if provided, then exit with the OK code.
+sub ok(@) {
+    &plog(@_) if @_;
+    exit EXIT_OK;
+}
+
+# Log a message if provided, then exit with the HARD code.
+sub hard(@) {
+    &plog(@_) if @_;
+    exit EXIT_HARD;
+}
+
+# Log a message if provided, then exit with the SOFT code.
+sub soft(@) {
+    &plog(@_) if @_;
+    exit EXIT_SOFT;
+}
 
 1;
