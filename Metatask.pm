@@ -71,7 +71,7 @@ L<McFeely::Task>
 
 =head1 AUTHOR
 
-Matt Liggett, mml@pobox.com
+Matt Liggett, E<lt>mml@pobox.comE<gt>
 
 =cut
 

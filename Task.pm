@@ -93,8 +93,8 @@ L<McFeely::Metatask>
 
 =head1 AUTHORS
 
-Matt Liggett <mml@pobox.com>, Adrian Hosey <ahosey@systhug.com>,
-Chris Dent <cdent@kiva.net>
+Matt Liggett E<lt>mml@pobox.comE<gt>, Adrian Hosey
+E<lt>ahosey@systhug.comE<gt>, Chris Dent E<lt>cdent@kiva.netE<gt>
 
 =cut
 

@@ -33,7 +33,10 @@ OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	  topdir.o
 
 TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
-	  McFeely.pm topdir mcfeely.h chdir.pl Internal.pm snooze secretmaker
+	  McFeely.pm topdir mcfeely.h chdir.pl Internal.pm snooze \
+	  secretmaker 
+
+HTML	= Metatask.html Job.html Task.html	
 
 ROOTUSER = $(shell cat ROOTUSER)
 MCUSER   = $(shell cat MCUSER)
@@ -62,12 +65,13 @@ SPECFILE	= $(PROJECT).spec
 RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-client-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-server-$(VERSION)-1.i386.rpm
 SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva
-WWWLOC		= www.kiva.net:~systhug/www/mcfeely
+WWWLOC		= www.systhug.com:~systhug/www/mcfeely
 
 .PHONY: all install rpminstall dist rpm ftp clean
 .INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
+.SUFFIXES: .pm .html
 
-all: $(TARGETS)
+all: $(TARGETS) 
 
 install: all PERLDIR
 	for i in '' /bin /comm /control /lib /lib/perl; do \
@@ -160,15 +164,16 @@ do-rpm: $(TARFILE) $(SPECFILE)
 	rpm -ba $(RPMDIR)/SPECS/$(SPECFILE)
 
 ftp: $(RPMFILE) $(SRPMFILE)
-	chmod 444 $(RPMFILE) $(SRPMFILE) $(TARFILE)
+	chmod 644 $(RPMFILE) $(SRPMFILE) $(TARFILE)
 	scp $(RPMFILE) $(FTPLOC)/RPMS/i386
 	scp $(SRPMFILE) $(FTPLOC)/SRPMS
 
-www: $(RPMFILE) $(TARFILE) $(SRPMFILE)
-	chmod 444 $(RPMFILE) $(SRPMFILE) $(TARFILE)
+www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML)
+	chmod 644 $(RPMFILE) $(SRPMFILE) $(TARFILE) $(HTML)
 	scp $(RPMFILE) $(WWWLOC)/dist
 	scp $(SRPMFILE) $(WWWLOC)/dist
 	scp $(TARFILE) $(WWWLOC)/dist
+	scp $(HTML) $(WWWLOC)
 
 update: ftp www
 
@@ -243,3 +248,6 @@ createtestdir: McFeely.pm
 	-mkdir McFeely
 	cd McFeely && ln -sf ../Job.pm && ln -sf ../Task.pm && \
 		ln -sf ../Metatask.pm
+
+.pm.html: Metatask.pm Job.pm Task.pm
+	pod2html $< > $*.html
