@@ -100,6 +100,7 @@ sub new {
     my $class = shift;
     my $self = bless {}, $class;
 
+    $self->{tasks} = [];
     $self->snot('');
     $self->fnot('');
     $self->desc('');
