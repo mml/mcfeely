@@ -1,12 +1,7 @@
 #!/usr/bin/perl
 
-# XXX remove me
-sub chdir_top { chdir "/home/mliggett/mcfeely-test" }
-
-# XXX remove me
-sub bail { die @_, "\n" }
-
-#require 'files.pl';
+require 'chdir.pl';
+require 'log.pl';
 
 # usage: files(DIRHANDLE)
 # returns files like readdir, but it skips . and ..
@@ -18,11 +13,8 @@ sub files(*) {
     return undef;
 }
 
-1;
-#---
-
-chdir_top or bail "Could not chdir: ", McFeely->errmsg, "; exiting.";
-chdir "queue" or bail "Could not chdir queue: $!";
+&chdir_top or bail("Could not chdir: ", McFeely->errmsg, "; exiting.");
+chdir 'queue' or bail("Could not chdir queue: $!");
 
 sub do_task($) {
     my $num = shift;
