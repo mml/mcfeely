@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <syslog.h>
 
 #include "mcfeely.h"
 #include "exit-codes.h"
@@ -33,24 +34,16 @@
 int tube[2];
 
 void
-log(msg, len)
-char *msg;
-int len;
-{
-    if (write(2, msg, len) != len) _exit(0);
-}
-
-void
 exit_read(void)
 {
-    log("read error", 10);
+    syslog(LOG_ERR, "error reading from ttpc");
     _exit(0);
 }
 
 void
 exit_write(void)
 {
-    log("write error", 11);
+    syslog(LOG_ERR, "error writing to ttpc");
     _exit(0);
 }
 
@@ -62,7 +55,7 @@ copy_tube(void)
 
     msg = (char *)malloc(4096);
     if (msg == 0) {
-        log("out of memory", 13);
+        syslog(LOG_ERR, "out of memory in copy_tube");
         write(1, "0:,", 3);
 	free(msg);
         return;
@@ -70,12 +63,13 @@ copy_tube(void)
 
     len = read(tube[0], msg, 4096);
     if (len < 0) {
-        log("read error", 10);
+        syslog(LOG_ERR, "read error in copy_tube");
         write(1, "0:,", 3);
 	free(msg);
         return;
     }
-    if (knswrite(1, msg, len) == -1) log("write error", 11);
+    if (knswrite(1, msg, len) == -1)
+        syslog(LOG_ERR, "write error in copy_tube");
     free(msg);
 }
 
@@ -195,14 +189,23 @@ main(void)
     char *args[256];
     int status;
 
-    if (chdir(mcfeely_topdir) == -1) _exit(0);
-    if (pipe(tube) == -1) _exit(0);
+    /* let's make the connection to syslog */
+    openlog("mcfeely-ttpd", LOG_PID, LOG_DAEMON);
+
+    if (chdir(mcfeely_topdir) == -1) {
+        syslog(LOG_ERR, "unable to chdir %s", mcfeely_topdir);
+        _exit(0);
+    }
+
+    if (pipe(tube) == -1) {
+        syslog(LOG_ERR, "unable to create pipe");
+        _exit(0);
+    }
 
     if (knsbread(0, &buf) == -1) _exit(0);
     if (! knsbuf_terminate(&buf)) _exit(0);
     if (! secret_match(buf)) _exit(0);
     if (read(0, &tasknum, 4) != 4) exit_read();
-    /* fprintf(stderr, "task %d\n", tasknum);  */
     if (read(0, &junk, 4) != 4)    exit_read();
     if (read(0, &junk, 4) != 4)    exit_read();
     buf.len = 0;
@@ -229,7 +232,9 @@ main(void)
     close(tube[1]);
     (void)wait(&status);
 
-/*    fprintf(stderr, "exit status %d\n", WEXITSTATUS(status)); */
+    syslog(LOG_INFO, "tasknum:%d comm:%s exit:%d",
+                      tasknum, args[0], WEXITSTATUS(status));
+
          if (! WIFEXITED(status))              Z("program abended", 15);
     else if (WEXITSTATUS(status) == 0)         K_tube();
     else if (WEXITSTATUS(status) == EXIT_SOFT) Z_tube();
