@@ -20,7 +20,6 @@ void
 get_hcas(void)
 {
     unsigned int bytes;
-    char nargs;
 
     while (read(0, &bytes, sizeof(bytes)) == sizeof(bytes)) {
         pidopen();
