@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <knetstring.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -118,7 +119,7 @@ void
 check_safe(buf)
 knsbuf_t buf;
 {
-    for ( ; buf.start != '\0'; ++buf.start)
+    for ( ; *(char *)buf.start != '\0'; ++buf.start)
         if (*(char *)buf.start == '/') {
             F("unsafe comm", 11);
             _exit(0);
@@ -132,11 +133,18 @@ char *args[];
 {
     int n;
     int i;
+    char *s;
 
+    /* XXX: I think maybe we can bum some instructions or variables here, but I
+     * haven't analyzed it closely enough yet.  mml
+     */
     n = 1;
+    s = (char *)buf.start;
     for (i = 0; i < buf.len; ++i)
-        if (((char *)buf.start)[i] == '\0')
-            args[n++] = ((char *)buf.start)+i;
+        if (((char *)buf.start)[i] == '\0') {
+            args[n++] = s;
+            s = (char *)buf.start + i;
+        }
 }
 
 void
@@ -149,7 +157,7 @@ main(void)
     int status;
 
     if (chdir(mcfeely_topdir) == -1) _exit(0);
-    if (pipe(tube) == 0) _exit(0);
+    if (pipe(tube) == -1) _exit(0);
 
     if (knsbread(0, &buf) == -1) _exit(0);
     if (! knsbuf_terminate(&buf)) _exit(0);
@@ -157,6 +165,7 @@ main(void)
     if (read(0, &tasknum, 4) != 4) exit_read();
     if (read(0, &junk, 4) != 4)    exit_read();
     if (read(0, &junk, 4) != 4)    exit_read();
+    buf.len = 0;
     if (knsbread(0, &buf) == -1)   exit_read();
     check_safe(buf);
     args[0] = buf.start;
@@ -169,12 +178,14 @@ main(void)
 
         case 0:
             close(0);
+            close(tube[0]);
             dup2(tube[1], 1);
             execv(args[0], args);
             _exit(0);
             break;
     }
 
+    close(tube[1]);
     (void)wait(&status);
 
          if (! WIFEXITED(status))              Z("program abended", 15);
