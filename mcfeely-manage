@@ -16,6 +16,7 @@ FD_SET(SRR, $rin);
 open SIW, ">&=$out" or die "open SIW (fd $out): $!\n";
 select SIW; $| = 1; select STDOUT; $| = 1;
 
+require 'chdir.pl';
 require 'const.pl';
 require 'log.pl';
 require 'safe_to_exit.pl';
@@ -26,7 +27,7 @@ require 'attempt_tasks.pl';
 require 'do_select.pl';
 require 'read_results.pl';
 
-chdir '/home/mliggett/mcfeely-test' or bail("Could not chdir: $!; exiting.");
+&chdir-top or bail("Could not chdir: $!; exiting.");
 chdir 'queue' or bail("Could not chdir: $!; exiting.");
 
 plog("starting");

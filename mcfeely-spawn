@@ -3,11 +3,12 @@
 use Spawner;
 use strict;
 
+require 'chdir.pl';
 require 'log.pl';
 
 $| = 1;
 
-chdir '/home/mliggett/mcfeely-test' or bail("cannot chdir: $!");
+&chdir_top or bail("cannot chdir: $!");
 
 &init;
 &doit(\&launch_ttpc, \&pack_result);
