@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.20 2000/07/19 04:16:37 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.20.4.1 2000/07/28 04:39:05 cdent Exp $
 # vi:noet
 
 # mcfeely        Asynchronous remote task execution.
@@ -26,10 +26,12 @@ Version: @version@
 Release: 1
 Copyright: GPL
 Group: Daemons
-Source: mcfeely-@version@.tar.gz
+Source0: mcfeely-@version@.tar.gz
+Source1: mcfeely.init
 BuildRoot: /tmp/mcfeely-build-@version@
-Packager: Matt Liggett <mml@pobox.com>
+Packager: Jeremy Fischer <jeremy@pobox.com>
 Vendor: Kiva Networking
+Requires: initscripts
 %description
 @BLURB@
 
@@ -68,8 +70,88 @@ make
 
 %install
 make ROOT="$RPM_BUILD_ROOT" rpminstall
+mkdir -p $RPM_BUILD_ROOT/var/log/mcfeely $RPM_BUILD_ROOT/etc/rc.d/init.d
+install -m755 $RPM_SOURCE_DIR/mcfeely.init \
+      $RPM_BUILD_ROOT/etc/rc.d/init.d/mcfeely
 
-%files common
+%post client
+# Update /etc/inetd.conf
+if ! grep -q '^[# \t]*ttp2' /etc/services ; then
+        echo >> /etc/services
+        echo "ttp2            757/tcp                         # mcfeely task transfer" >> /etc/services
+fi
+
+if ! grep -q '^[# \t]*ttp2' /etc/inetd.conf ; then
+        echo >> /etc/inetd.conf
+        echo ttp2  stream tcp  nowait.1000  root  /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd  >> /etc/inetd.conf
+        if [ -f /var/run/inetd.pid ] ; then
+                kill -HUP `cat /var/run/inetd.pid`
+        fi
+fi
+
+%post server
+# Create a log file if there isn't one
+if [ ! -f /var/log/mcfeely/mcfeely.log ]; then
+    touch /var/log/mcfeely/mcfeely.log
+    chown @MCUSER@ /var/log/mcfeely/mcfeely.log
+    chgrp @MCGROUP@ /var/log/mcfeely/mcfeely.log
+    chmod 600 /var/log/mcfeely/mcfeely.log
+fi
+
+# Add a syslog facility
+if ! grep -q '^local6' /etc/syslog.conf ; then
+	echo >> /etc/syslog.conf
+	echo "local6.*					/var/log/mcfeely/mcfeely.log" >> /etc/syslog.conf
+        if [ -f /var/run/syslogd.pid ] ; then
+                kill -HUP `cat /var/run/syslogd.pid`
+        fi
+fi
+
+if [ -f /sbin/chkconfig ]; then
+	/sbin/chkconfig --level 345 mcfeely on
+fi
+
+
+%postun client
+if [ "$1" = 0 ] ; then
+        # remove ttp2 from /etc/inetd.conf if it is there
+        if [ -f /etc/inetd.conf ] &&
+        grep -q '^ttp2' /etc/inetd.conf >/dev/null 2>&1 ; then
+                if grep -v ttp2 /etc/inetd.conf > /tmp/inetd.$$ ; then
+                        mv /tmp/inetd.$$ /etc/inetd.conf
+                fi
+        fi
+fi
+
+if [ "$1" = 0 ] ; then
+        # remove ttp2 from /etc/services if it is there
+        if [ -f /etc/services ] &&
+        grep -q '^ttp2' /etc/services >/dev/null 2>&1 ; then
+                if grep -v ttp2 /etc/services > /tmp/services.$$ ; then
+                        mv /tmp/services.$$ /etc/services
+                fi
+        fi
+fi
+
+%postun server
+if [ "$1" = 0 ] ; then
+        # remove mcfeely logging from /etc/syslog.conf if it is there
+        if [ -f /etc/syslog.conf ] &&
+        grep -q 'mcfeely.log' /etc/syslog.conf >/dev/null 2>&1 ; then
+                if grep -v mcfeely.log /etc/syslog.conf > /tmp/syslog.$$ ; then
+                        mv /tmp/syslog.$$ /etc/syslog.conf
+                fi
+        fi
+        if [ -f /var/run/syslogd.pid ] ; then
+                kill -HUP `cat /var/run/syslogd.pid`
+        fi
+fi
+
+
+%files common 
+%doc %attr(-,root,root) COPYING HOWTO INSTALL MANIFEST README 
+%doc %attr(-,root,root) docs/DESIGN docs/OVERVIEW
+%doc %attr(-,root,root) docs/perl-interface.txt docs/ttp2.txt
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
@@ -82,6 +164,9 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Task.pm
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Const.pm
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Log.pm
+%attr(-,root,root)		   /usr/man/man8/mcfeely-queue.8
+%attr(-,root,root)		   /usr/man/man8/mcfeely-ttpc.8
+%attr(-,root,root)		   /usr/man/man8/mcfeely-ttpd.8
 
 %files server
 %attr(- @MCUSER@   @QGROUP@ )      @TOPDIR@/bin/mcfeely-queue
@@ -107,6 +192,8 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/snot
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
 %attr(- @MCUSER@   @MCGROUP@)      @TOPDIR@/queue/trigger
+%attr(700 @MCUSER@ @MCGROUP@) %dir /var/log/mcfeely
+%attr(- @ROOTUSER@ @MCGROUP@) %config /etc/rc.d/init.d/mcfeely
 
 %files client
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm

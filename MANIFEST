@@ -26,7 +26,9 @@ mcfeely-queue.h
 mcfeely-spawn
 mcfeely-start
 mcfeely-ttpc.c
+mcfeely-ttpc.8
 mcfeely-ttpd.c
+mcfeely-ttpd.8
 mcfeely.h.in
 pid.c
 pid.h
@@ -57,3 +59,12 @@ hostcheck.pl
 serverslam.pl
 Log.pm
 Const.pm
+COPYING
+HOWTO
+INSTALL
+README
+docs/DESIGN
+docs/OVERVIEW
+docs/perl-interface.txt
+docs/ttp2.txt
+mcfeely.init

@@ -127,3 +127,49 @@ sub do_select() {
     close($trigger);
 }
 
+__END__
+
+=head1 NAME
+
+mcfeely-manage - queue management system for McFeely
+
+=head1 SYNOPSIS
+
+B<mcfeely-manage> C<E<lt>mcfeely-spawn pidE<gt>> C<E<lt>fd of in
+pipeE<gt>> C<E<lt>fd of out pipeE<gt>>
+
+=head1 DESCRIPTION
+
+The B<mcfeely-manage> program is responsible for reading and
+managing the McFeely queue. mcfeely-manage listens on a FIFO
+called C<trigger> in the queue directory. It learns about new
+jobs and their associated tasks and if a task needs to be done
+the task number is passed to B<mcfeely-spawn> down the out pipe.
+B<mcfeely-manage> then waits for results information on the in
+pipe. Results are stored in the queue. When all tasks in job have
+succeeded or failed, that job is done. B<mcfeely-manage> operates
+on multiple jobs and tasks concurrently.
+
+See the OVERVIEW document a detailed description of how tasks
+move through mcfeely-manage.
+
+=head1 SEE ALSO
+
+L<mcfeely-start>,
+L<mcfeely-spawn>,
+B<OVERVIEW>
+
+=head1 COPYRIGHT
+
+This program is copyright 2000 Kiva Networking. It is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+Please see the file COPYING in the distribution.
+
+=head1 AUTHORS
+
+Matt Liggett E<lt>mml@pobox.comE<gt>, Chris Dent E<lt>cdent@systhug.comE<gt>,
+Adrian Hosey E<lt>ahosey@systhug.comE<gt>
+
+=cut
