@@ -11,7 +11,7 @@ PROG=mcfeely-start
 BIN=/opt/mcfeely/bin
 
 # Source function library.
-. /etc/rc.d/init.d/functions
+. /etc/rc.d/init.d/functions INITLOG_ARGS="--facility local6 --priority debug"
 
 [ -f $BIN/mcfeely-start ] || exit 0
 
@@ -20,12 +20,12 @@ case "$1" in
   start)
      PATH=/usr/local/bin:/usr/bin:$PATH
      echo -n "Starting mcfeely: "
-     initlog --facility local6 --priority debug -c daemon $BIN/$PROG -u mcfeely 
+     daemon $BIN/$PROG -u mcfeely 
      touch /var/lock/subsys/$PROG
     ;;
   stop)
      echo -n "Stopping mcfeely: "
-     initlog --facility local6 --priority debug -c killproc $BIN
+     killproc $BIN
      echo "done"
      rm -f /var/lock/subsys/$PROG
     ;;

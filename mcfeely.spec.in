@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.8 2000/07/27 23:37:45 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.9 2000/07/27 23:44:58 jeremy Exp $
 # vi:noet
 
 # mcfeely        Asynchronous remote task execution.
@@ -76,6 +76,11 @@ install -m755 $RPM_SOURCE_DIR/mcfeely.init \
 
 %post client
 # Update /etc/inetd.conf
+if ! grep -q '^[# \t]*ttp2' /etc/services ; then
+        echo >> /etc/services
+        echo "ttp2            757/tcp                         # mcfeely task transfer" >> /etc/services
+fi
+
 if ! grep -q '^[# \t]*ttp2' /etc/inetd.conf ; then
         echo >> /etc/inetd.conf
         echo ttp2  stream tcp  nowait.1000  root  /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd  >> /etc/inetd.conf
@@ -114,6 +119,16 @@ if [ "$1" = 0 ] ; then
         grep -q '^ttp2' /etc/inetd.conf >/dev/null 2>&1 ; then
                 if grep -v ttp2 /etc/inetd.conf > /tmp/inetd.$$ ; then
                         mv /tmp/inetd.$$ /etc/inetd.conf
+                fi
+        fi
+fi
+
+if [ "$1" = 0 ] ; then
+        # remove ttp2 from /etc/services if it is there
+        if [ -f /etc/services ] &&
+        grep -q '^ttp2' /etc/services >/dev/null 2>&1 ; then
+                if grep -v ttp2 /etc/services.conf > /tmp/services.$$ ; then
+                        mv /tmp/services.$$ /etc/services
                 fi
         fi
 fi
