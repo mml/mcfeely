@@ -75,7 +75,7 @@ char *fnam;
 }
 
 
-void
+int
 main(argc, argv)
 int argc;
 char *argv[];
@@ -146,4 +146,6 @@ char *argv[];
         case 'F': hard(buf.start, buf.len); break;
         default:  hard("garbled report", 14);
     }
+    /* shouldn't be able to reach here, but it shuts up a warning */
+    exit(0);
 }

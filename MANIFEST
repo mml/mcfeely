@@ -57,3 +57,4 @@ snooze.c
 secretmaker.c
 test_comm
 hostcheck.pl
+serverslam.pl

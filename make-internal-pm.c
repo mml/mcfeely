@@ -22,7 +22,7 @@
 
 #include "mcfeely.h"
 
-void
+int
 main(void)
 {
     printf("package McFeely::Internal;\n\n");

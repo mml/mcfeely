@@ -21,11 +21,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
 extern char** environ;
 
-void
+int
 main(void)
 {
     int pid;

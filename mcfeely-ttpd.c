@@ -186,7 +186,7 @@ char *args[];
     args[n] = NULL;
 }
 
-void
+int
 main(void)
 {
     knsbuf_t buf = {0,0,0};
@@ -233,4 +233,7 @@ main(void)
     else if (WEXITSTATUS(status) == 0)         K_tube();
     else if (WEXITSTATUS(status) == EXIT_SOFT) Z_tube();
     else                                       F_tube();
+
+    /* quite warnings, be clean */
+    exit(0);
 }

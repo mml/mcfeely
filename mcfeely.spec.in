@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.16.2.2 2000/06/20 23:47:50 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.16.2.3 2000/06/21 22:21:22 cdent Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -91,6 +91,7 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/secretmaker
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/hostcheck.pl
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/serverslam.pl
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/control/secrets
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
