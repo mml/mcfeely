@@ -133,8 +133,8 @@ sub read_results() {
         plog "task $num: deferral: $msg";
         # exponential backoff stolen from djb
         $task->[$TASK_NEXT_TRY] =
-            ( $task->[$TASK_BIRTH] +
-              (($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
+            $task->[$TASK_BIRTH] +
+              ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
                + 20) ** 2;
         task_enqueue $task;
     } elsif ($code eq $TASK_FAILURE_CODE) {
