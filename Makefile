@@ -71,7 +71,7 @@ SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva/RPMS/i386
 
 .PHONY: all install rpminstall dist rpm ftp clean
-.INTERMEDIATE: $(SPECFILE) PERLDIR
+.INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
 
 all: $(TARGETS)
 
