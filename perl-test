@@ -1,0 +1,39 @@
+use McFeely;
+
+#$x = new McFeely::Job;
+#$x->desc('a test');
+#$x->snot('mliggett@kiva.net');
+#$x->fnot('mliggett@kiva.net');
+#$t0 = new McFeely::Task('sherrill', 'test', 'abc123');
+#$t1 = new McFeely::Task('sherrill', 'test', 'def456');
+#$t2 = new McFeely::Task('sherrill', 'test', 'ghj789');
+#$x->add_tasks($t0, $t1, $t2);
+#$x->add_dependencies($t0->requires($t1, $t2), $t1->requires($t2));
+#$x->enqueue or die $x->errstr, "\n";
+
+#$x = new McFeely::Job;
+#$x->desc('another test');
+#$x->snot('mliggett@kiva.net');
+#$x->fnot('mliggett@kiva.net');
+#$t0 = new McFeely::Task('sherrill', 'test', 'abc123');
+#$t1 = new McFeely::Task('sherrill', 'test', 'def456');
+#$t2 = new McFeely::Task('sherrill', 'acme', 'ghj789');
+#$x->add_tasks($t0, $t1, $t2);
+#$x->add_dependencies($t0->requires($t1, $t2), $t1->requires($t2));
+#$x->enqueue or die $x->errstr, "\n";
+
+$x = new McFeely::Job;
+$x->desc('metatest');
+$x->snot('mliggett@kiva.net');
+$x->fnot('mliggett@kiva.net');
+$t0 = new McFeely::Task('foucault', 'test', 'abra');
+$t1 = new McFeely::Task('foucault', 'test', 'cadabra');
+$t2 = new McFeely::Task('foucault', 'test', 'ala');
+$t3 = new McFeely::Task('foucault', 'test', 'cazam');
+$m0 = new McFeely::Metatask($t0, $t1);
+$m0->add_dependencies($t1->requires($t0));
+$m1 = new McFeely::Metatask($t2, $t3);
+$m1->add_dependencies($t3->requires($t2));
+$x->add_tasks($m0, $m1);
+$x->add_dependencies($m1->requires($m0));
+$x->enqueue or die $x->errstr, "\n";
