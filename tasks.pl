@@ -26,11 +26,13 @@ sub task_new_task_from_file($) {
     };
 
     read INFO, $task->[$TASK_NEEDS_DONE], 1;
+    $task->[$TASK_NEEDS_DONE] = ! unpack 'c', $task->[$TASK_NEEDS_DONE];
     if (! $task->[$TASK_NEEDS_DONE]) {
         close INFO;
         return undef;
     }
     read INFO, $task->[$TASK_NDEPS], 1;
+    $task->[$TASK_NDEPS] = unpack 'c', $task->[$TASK_NDEPS];
     while ((read INFO, $data, 4) == 4) {
         $data = unpack 'L', $data;
         push @$waiters, $data;
