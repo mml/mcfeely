@@ -41,12 +41,12 @@ main(void)
             close(pipe0[0]);
             close(pipe1[0]);
             close(pipe2[0]);
-            nbytes = 12;
+            nbytes = 18;
             write(pipe0[1], &nbytes, sizeof(nbytes));
-            write(pipe0[1], "foo\0bar\0baz\0", 12);
-            nbytes = 13;
+            write(pipe0[1], "sherrill\0test\0baz\0", 18);
+            nbytes = 19;
             write(pipe0[1], &nbytes, sizeof(nbytes));
-            write(pipe0[1], "bar\0baz\0quux\0", 13);
+            write(pipe0[1], "sherrill\0test\0quux\0", 19);
             close(pipe0[1]);
             write(pipe1[1], "\x01" "\x00" "\x00" "\x01" "\x00", 5);
             close(pipe1[1]);
