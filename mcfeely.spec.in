@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.4 2000/07/19 22:06:46 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.5 2000/07/20 21:07:18 jeremy Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -88,6 +88,15 @@ if [ ! -f /var/log/mcfeely/mcfeely.log ]; then
     chmod 600 /var/log/mcfeely/mcfeely.log
 fi
 
+# Add a syslog facility
+if ! grep -q '^local6' /etc/syslog.conf ; then
+	echo >> /etc/syslog.conf
+	echo "local6.*					/var/log/mcfeely/mcfeely.log" >> /etc/syslog.conf
+        if [ -f /var/run/syslogd.pid ] ; then
+                kill -HUP `cat /var/run/syslogd.pid`
+        fi
+fi
+
 
 %postun client
 if [ "$1" = 0 ] ; then
@@ -99,6 +108,22 @@ if [ "$1" = 0 ] ; then
                 fi
         fi
 fi
+
+%postun server
+if [ "$1" = 0 ] ; then
+        # remove mcfeely logging from /etc/syslog.conf if it is there
+        if [ -f /etc/syslog.conf ] &&
+        grep -q 'mcfeely.log' /etc/syslog.conf >/dev/null 2>&1 ; then
+                if grep -v mcfeely.log /etc/syslog.conf > /tmp/syslog.$$ ; then
+                        mv /tmp/syslog.$$ /etc/syslog.conf
+                fi
+        fi
+        if [ -f /var/run/syslogd.pid ] ; then
+                kill -HUP `cat /var/run/syslogd.pid`
+        fi
+fi
+
+
 
 %files common 
 %doc %attr(-,root,root) COPYING HOWTO INSTALL MANIFEST README 
