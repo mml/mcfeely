@@ -42,6 +42,13 @@ sub task_new_task_from_file($) {
     $task->[$TASK_WAITERS] = $waiters;
     $task->[$TASK_INO] = $ino;
 
+    open TASK, "task/$ino" or do {
+        plog "trouble: cannot open task/$ino: $!";
+        return undef;
+    };
+    ($task->[$TASK_HOST] = <TASK>) =~ s,\0.*,,g;
+    close TASK;
+
     return $task;
 }
 
