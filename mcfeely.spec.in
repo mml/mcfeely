@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.5 1999/07/29 14:33:29 mliggett Exp $
+# $Id: mcfeely.spec.in,v 1.6 1999/07/29 14:43:04 mliggett Exp $
 Summary: asynchronous task execution on multiple hosts
 Name: mcfeely
 Version: @version@
@@ -74,7 +74,11 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
 %attr(- @MCUSER@   @MCGROUP@)      @TOPDIR@/queue/trigger
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely.pm
-%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely
+%attr(- @ROOTUSER@ @QGROUP@)  %dir @PERLDIR@/McFeely
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Internal.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Job.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Metatask.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Task.pm
 
 %files client
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm

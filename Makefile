@@ -75,11 +75,13 @@ install: all PERLDIR
 	mkfifo `./topdir`/queue/trigger
 
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0440 McFeely.pm `cat PERLDIR`
-	install -o $(ROOTUSER) -g $(QGROUP) -m 0750 -d `cat PERLDIR`/McFeely
+	install -o $(ROOTUSER) -g $(QGROUP) -m 0755 -d `cat PERLDIR`/McFeely
 
-	for i in Internal.pm Job.pm Task.pm Metatask.pm; do \
+	for i in Job.pm Task.pm Metatask.pm; do \
 		install -o $(ROOTUSER) -g $(QGROUP) -m 0440 $$i `cat PERLDIR`/McFeely ;\
 	done
+
+	install -o $(ROOTUSER) -g $(QGROP) -m 0444 Internal.pm `cat PERLDIR`/McFeely
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
 	  do_select.pl jobs.pl read_results.pl tasks.pl; do \
@@ -109,11 +111,13 @@ rpminstall: all PERLDIR
 	install -d $(ROOT)/`cat PERLDIR`
 
 	install -m 0440 McFeely.pm $(ROOT)/`cat PERLDIR`
-	install -m 0750 -d $(ROOT)/`cat PERLDIR`/McFeely
+	install -m 0755 -d $(ROOT)/`cat PERLDIR`/McFeely
 
-	for i in Internal.pm Job.pm Task.pm Metatask.pm; do \
+	for i in Job.pm Task.pm Metatask.pm; do \
 		install -m 0440 $$i $(ROOT)/`cat PERLDIR`/McFeely ;\
 	done
+
+	install -m 0444 Internal.pm $(ROOT)/`cat PERLDIR`/McFeely
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
 	  do_select.pl jobs.pl read_results.pl tasks.pl; do \
