@@ -41,6 +41,23 @@ char *taskid;
     return fd;
 }
 
+int
+secret_open(raw_addr)
+char *raw_addr;
+{
+    char fn[32]; /* "control/secrets/" (16) + "NNN.NNN.NNN.NNN" (15) + NUL (1) */
+    char *dotted_quad;
+    struct in_addr addr;
+
+    bcopy(raw_addr, &addr.s_addr, sizeof(addr.s_addr));
+
+    strcpy(fn, "control/secrets/");
+    dotted_quad = inet_ntoa(addr);
+    strcat(fn, dotted_quad);
+    return open(fn, O_RDONLY);
+}
+
+
 void
 main(argc, argv)
 int argc;
@@ -50,21 +67,17 @@ char *argv[];
     knsbuf_t buf = {0, 0, 0};
     char host[1024];
     char *i;
-    char *realhost;
-    int realport;
+    /*char *realhost;*/
+    int port;
     int s;
     struct hostent *ent;
     struct protoent *tcp;
+    struct servent *ttp;
     struct sockaddr_in sin;
     unsigned int tasknum;
     char code;
 
     bzero(&sin, sizeof(sin));
-
-    /* open secret file */
-    /* XXX: separate secrets */
-    pfd = open("control/secret", O_RDONLY);
-    if (pfd == -1) soft("cannot open control/secret", 26);
 
     /* tcp socket */
     tcp = getprotobyname("tcp");
@@ -76,22 +89,33 @@ char *argv[];
     } while (*i++ != '\0');
 
     /* get real hostname and port */
+    /*
     if (! hostport(&realhost, &realport, host))
         soft("cannot find host in control/hosts", 33);
+    */
+    ttp = getservbyname("ttp2", "tcp");
+    if (ttp == 0) port = 757;
+    else          port = ntohs(ttp->s_port);
 
     /* lookup in DNS */
-    ent = gethostbyname(realhost);
+    ent = gethostbyname(host);
     if (!ent) soft("cannot find host", 16);
     if (!ent->h_addr) soft("host has no address", 19);
+    
+    /* open secret file */
+    pfd = secret_open(ent->h_addr);
+    if (pfd == -1) soft("cannot open secret", 18);
 
     /* prepare sockaddr_in */
     bcopy(ent->h_addr, &sin.sin_addr, ent->h_length);
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(realport);
+    sin.sin_port = htons(port);
 
     /* connect */
-    if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1)
+    if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
+        perror("connect");
         soft("cannot connect", 14);
+    }
 
     /* send: auth, taskid, UID, GID, the task */
     if (knsfwrite(s, pfd) == -1)      soft_write();
