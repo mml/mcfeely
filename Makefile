@@ -49,18 +49,11 @@ CC	= gcc
 # use this for building debuggable binaries
 CFLAGS   = -g -Wall
 
-RPMDIR      = $(shell \
-		perl -e \
-			'for $$f (@ARGV) { \
-				next unless open F, $$f; \
-				while (<F>) { \
-					chomp; \
-					($$k, $$v) = split /\s*:\s+/, $$_ ,2; \
-					$$t = $$v if $$k eq "topdir"; \
-				} \
-			} \
-			print"$$t\n"' \
-			/usr/lib/rpmrc /usr/lib/rpm/rpmrc /etc/rpmrc $$HOME/.rpmrc)
+RPMDIR	= $(shell rpm --showrc |\
+		perl -n -e \
+			'/topdir(?:\s+|\s+:\s+)(\/.*$)/ && \
+			print "$$1\n";')
+
 VERSION		= $(shell cat version)
 EVERYTHING	= $(shell cat MANIFEST)
 DIST		= $(PROJECT)-$(VERSION)
@@ -134,14 +127,12 @@ rpminstall: all PERLDIR
 	# this line because the perl dir won't be there during rpm install
 	install -d $(ROOT)/`cat PERLDIR`
 
-	install -m 0440 McFeely.pm $(ROOT)/`cat PERLDIR`
+	install -m 0444 McFeely.pm $(ROOT)/`cat PERLDIR`
 	install -m 0755 -d $(ROOT)/`cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm; do \
-		install -m 0440 $$i $(ROOT)/`cat PERLDIR`/McFeely ;\
+	for i in Job.pm Task.pm Metatask.pm Internal.pm; do \
+		install -m 0444 $$i $(ROOT)/`cat PERLDIR`/McFeely ;\
 	done
-
-	install -m 0444 Internal.pm $(ROOT)/`cat PERLDIR`/McFeely
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
 	  do_select.pl jobs.pl read_results.pl tasks.pl; do \
