@@ -2,13 +2,25 @@
 # remove all data structures
 sub finish_job($) {
     my $job = shift;
+    my $tasknum;
 
     mail_report 'fail' if $job->[$JOB_FAILED];
     mail_report 'succ';
 
-    log "end job $job->[$JOB_INO]";
+    open JOB, "job/$job" or plog "Could not open job/$job: $!";
+    seek JOB, 1, 1;
+    while (job_read_task(JOB, $tasknum)) {
+        foreach (qw(task info)) {
+            unlink "$_/$tasknum" or plog "Could not unlink $_/$tasknum: $!";
+        }
+        foreach (qw(fnot snot rep desc job)) {
+            unlink "$_/$job" or plog "Could not unlink $_/$job: $!";
+        }
+    }
+    close JOB;
 
-    #XXX
+    plog "end job $job->[$JOB_INO]";
+
 }
 
 # walk the tree of tasks waiting on this task and do something (contained
@@ -28,11 +40,11 @@ sub walk_waiters(&$$) {
     --$depth;
 
     $info->open("info/$ino") or do {
-        log "Cannot open info/$ino: $!";
+        plog "Cannot open info/$ino: $!";
         return undef;
     };
     $info->seek(5, 0) or do {
-        log "Cannot seek info/$ino: $!";
+        plog "Cannot seek info/$ino: $!";
         return undef;
     };
 
@@ -71,13 +83,13 @@ sub read_results() {
     if ($code eq $TASK_SUCCESS_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        log "task $num: success: $msg";
+        plog "task $num: success: $msg";
         report $job->[$JOB_INO], "task $num: success: $msg";
         decrement_waiters $task;
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     } elsif ($code eq $TASK_DEFERRAL_CODE) {
-        log "task $num: deferral: $msg";
+        plog "task $num: deferral: $msg";
         # exponential backoff stolen from djb
         $task->[$TASK_NEXT_TRY] =
             ( $task->[$TASK_BIRTH] +
@@ -87,7 +99,7 @@ sub read_results() {
     } elsif ($code eq $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        log "task $num: failure: $msg";
+        plog "task $num: failure: $msg";
         report $job->[$JOB_INO], "task $num: failure: $msg";
         defunct_waiters $task;
         $job->[$JOB_FAILED] = 1;
