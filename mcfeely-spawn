@@ -41,7 +41,7 @@ getopts('dT:', \%opt);
 # how many times should we be willing to fork
 # per time through the select loop
 my $Tasks_per_select = $opt{'T'};
-$Tasks_per_select    ||= 10;
+$Tasks_per_select    ||= 5;
 
 # in and out are the file descriptors passed to us from mcfeely-start
 my $in;
@@ -134,13 +134,14 @@ while (1) {
     # ahead and block CHLD signals about children
     sigprocmask(SIG_BLOCK, $sig_chld_set, $oldsigset);
 
+    # prepare any buffered data we might have
+    $stage = $Manage_read_buffer;
+
     # check to see if there is a filehandle with data 
     # or if we just fell through
     if (scalar @ready_to_read > 0) {
         # we have data
 
-        # clean up our $stage
-        $stage = '';
         # read it in
         eval {
             $stage .= $buf while
@@ -156,27 +157,28 @@ while (1) {
         }
     }
 
-    # add any buffered data we might have
-    $stage = $Manage_read_buffer . $stage;
 
-    #make the lines
-    if (defined($stage)) {
-        push(@lines, $&) while $stage =~ s/^.*\n//;
+    # make sure this is an empty lis
+    # we'll be looping on it in moments.
+    @lines = ();
+
+    # Adrian Hosey did some real live testing to determine
+    # that this is a shorter faster loop than the way it was done
+    # before
+    if (length($stage) != 0) {
+        my $task_input_counter = 0;
+        while (length($stage) != 0 &&
+                $task_input_counter++ < $Tasks_per_select) {
+            last if ($stage !~ /\n/);
+            $stage =~ s/^.*\n//;
+            push(@lines, $&);
+        }
     }
-        
-    # what's left in stage is incomplete data
+    # add any leftover $stage to the $Manager_read_buffer
     $Manage_read_buffer = $stage;
 
-    # this is an experimental throttle
-    # we only want to do the first N things in
-    # @lines to avoid overloading the system
-    my @process_lines = ();
-    @process_lines = splice(@lines, 0, $Tasks_per_select);
-    my $go_back = join('', @lines);
-    $Manage_read_buffer = $go_back . $Manage_read_buffer;
-
     # do stuff with the lines
-    foreach $line (@process_lines) {
+    foreach $line (@lines) {
         # get rid of line feed
         chomp($line);
 

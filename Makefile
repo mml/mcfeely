@@ -37,7 +37,7 @@ TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
 	secretmaker 
 
 HTML	 	= Metatask.html Job.html Task.html	
-HOWTO		= HOWTO
+HOWTO		= HOWTO TODO
 
 ROOTUSER 	= $(shell cat ROOTUSER)
 MCUSER   	= $(shell cat MCUSER)
