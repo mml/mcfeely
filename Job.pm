@@ -254,15 +254,9 @@ sub _flatten {
     foreach $task ($self->list_tasks) {
         if (ref($task) eq 'McFeely::Metatask') {
             push @ntasks, $task->list_tasks;
+            $self->add_dependencies(@{$task->{deps}});
         } else {
             push @ntasks, $task;
-        }
-    }
-
-    # 4. incorporate deps from metatasks
-    foreach $task ($self->list_tasks) {
-        if (ref($task) eq 'McFeely::Metatask') {
-            $self->add_dependencies(@{$task->{deps}});
         }
     }
 

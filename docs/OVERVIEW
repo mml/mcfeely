@@ -1,0 +1,304 @@
+
+When a perl program builds a McFeely::Job and then calls
+$job->enqueue, the magic and the mystery begin. Let's try to pierce
+the veil somewhat. Flowery metaphors aside, you're still going to have
+to look at the code if you want to really understand this. This
+document is a reading companion, not a substitute.
+
+Before we dig in let's look at a diagram of what a dependency list
+looks like inside a McFeely::Job - this will help in understanding
+flatten(). A dependency list is a list of lists. The first element of
+each component list is the Task which is dependent on the completion
+of other Tasks. The rest of the list is the Tasks upon which the first
+is dependent. Example: if Task A depends on B and Task C depends on D
+and E, then $deps looks like:
+
+$deps = [
+	   [ $A, $B ],
+	   [ $C, $D, $E ]
+        ];
+
+Notice that $deps is a reference to a list and not a list itself. A
+mnenomic that may help is "the first Task in the list is the _last_
+Task to be completed." If that helps remember it, if it confuses you
+forget I said it.
+
+The first thing that happens when an object begins enqueue() is that
+it is flatten()ed - namely any Metatasks are exploded into their
+component Tasks while preserving the dependency information. First
+flatten() expands the metatasks on the left-hand side of the
+dependency list into a list @tdeps. ("temporary dependency list") For
+example if Metatask A has two component Tasks and depends on Tasks B
+and C, @tdeps will end up containing Tasks A1 and A2, each depending
+on B and C.
+
+Next expand any Metatasks on the right-hand side of @tdeps. Another
+example: Task D depends on Metatask E which has two component
+Tasks. After expansion Task D will depend on Tasks E1 and E2. These
+expansions are stored in a list @ndeps. ("new dependency list") When
+completed @ndeps is assigned back to the "official" deps list of the
+Job, i.e: $self->{deps} = [@ndeps];
+
+Next we iterate over the task list for the Job (different than the
+dependency list.) The task list is rebuilt in @ntasks ("new task
+list") with any Metatasks being exploded into their component
+tasks. We also check if the Metatask has any internal dependencies
+i.e. a component Task which depends on another component task -
+remember that a Metatask is a hybrid of Task and Job. If the Metatask
+has internal dependencies they are "elevated" out of the Metatask and
+into the Job. Finally we reassign @ntasks to be the "official" task
+list for the Job. What we are left with is a Job which has no
+Metatasks.
+
+After flatten() we check that the job _is_completable().
+_is_completable() makes a copy of the flattened dependencies and
+removes tasks which have no dependencies. It then iterates thru the
+job again, and each time should be able to remove at least one more
+task because it removed the task(s) upon which that one was waiting in
+the previous pass. Basically this is like a "dry run" of the tasks
+being executed, each task being removed as it is "completed". If it
+makes a pass thru the job and tasks still remain but it can't remove
+any, that indicates a circularity is present and an error is reported.
+
+Once we know the job _is_completable() we open three pipes and fork
+off mcfeely-queue, the three pipes being tied to mcfeely-queue's
+stdin, stdout, and stderr (filenos 0, 1, 2 - the traditional names
+being meaningless in this context.) The tasks are sent on 0, the
+dependencies on 1, and the description and notification email
+addresses on 2. "man mcfeely-queue" for a little more detail on
+these. After the handoff to mcfeely-queue, McFeely::Job is done.
+
+Switch focus to the internals of mcfeely-queue. mcfeely-queue relies
+on functions defined in pid.c and fn.c. The first one we see in main()
+is pidfnmake() which makes a filename for the "pid/" directory based
+on the current process id. This is so we are guaranteed a scratch
+filename that won't be taken from us. 
+
+After that we call get_hcas() (what is hcas?) which uses pidopen() to
+create the file named by pidfnmake(), pidstat() to stat it, then the
+first task is read off fd 0 and written to this file. The file is
+renamed into the "task/" directory with a new name based on its inode
+number. This leaves the original filename in the "pid/" directory
+available again. The new inode number/file name is recorded in the
+ino[] array. The process repeats for each task waiting on fd 0 until
+we have read and written them all.
+
+Next is get_info() which writes out the state of the task (done or not
+done) and the dependency information. Via the fnmake_int() and
+fncreat() functions (the former making a filename and the latter
+making the file from that name) a new file is created in the directory
+"info/" with the same name as the associated task in "task/". A zero
+byte is written to file (the task is not done) and then the number of
+waiters is read from fd 1 and written, then the task numbers of the
+waiters.
+
+The rest is straightforward. The desc string, the snot, and fnot are
+read from fd 2 and written into files in "desc/", "snot/" and "fnot/"
+respectively. They go into files named for the job number - the job
+number is picked to be the inode number of the "desc/" file. One more
+file is written into "newj/". This file is named for the job number
+and contains the inode numbers/task numbers of all the tasks in this
+job. This last file is the "master key" to the whole job since it has
+all the task numbers. Then the "trigger" is pulled by writing a byte
+on the trigger file.
+
+The fellow listening to the trigger file is mcfeely-manage. To
+understand mcfeely-manage and his brother mcfeely-spawn we need to
+change our viewpoint. We've been following a job as it gets created,
+flattened, and place in queue - now we switch to the perspective of
+the programs which take things out of the queue. When the mcfeely
+initscript is run it runs mcfeely-start. mcfeely-start makes two
+pipes, forks, and connects the pipes between mcfeely-manage and
+mcfeely-spawn. When mcfeely-start is finished and gone we have
+something that looks like this:
+
+      mcfeely-manage
+        SRR    SIW
+         |      |
+         |      |
+   (out)SRW    SIR(in)
+      mcfeely-spawn
+
+The filehandle names are for "Socket Report Read" and "Socket Report
+Write" and "Socket Inject Write" and "Socket Inject Read". Note that
+SRW and SIR are remapped to mcfeely-spawn's STDOUT and STDIN
+respectively.
+
+When mcfeely-manage first starts it scans the "job/" directory with
+scan_job() to locate any jobs which might have been in progress when
+it was last shut down. This is the only time it reads "job/" -
+remember that the information for the tasks themselves is all in other
+directories. mcfeely-manage does continually monitor "newj/" for new
+arrivals. This is done with scan_job(). Whenever scan_job() finds
+something in "newj/" it opens the file and looks inside for task
+numbers. For each task number it looks up the task in "info/" and
+checks that (a) the task still needs doing (remember scan_job() is
+that same function that reads the "job/" dir on startup, that's why
+this check is needed) and (b) if the task needs doing it records the
+waiters from the "info/" file. It also gets in the "task/" file to get
+the host on which this task needs to be run. All this info is recorded
+in a pseudo-object internal to mcfeely-manage. ("pseudo-object"
+because the reference is unblessed - it's like an object that only has
+data members.) The task pseudo-object is inserted into a hash %Task
+keyed by task number, and it is also inserted into a priority queue
+@Task. The last thing scan_job() does is move the job file from
+"newj/" to "job/" so it knows not to read this job again unless there
+is a restart.
+
+Inside mcfeely-manage, each task knows its associated job number but
+the job pseudo-objects don't know their specfic task numbers - they
+just know how many tasks they have still awaiting completion. This is
+because mcfeely-manage deals mainly with tasks but it does need to
+know when a job is done i.e. waiting tasks == 0.
+
+After scan_job() comes attempt_tasks(). attempt_tasks() looks at the
+queue @Tasks. Each task has a TASK_NEXT_TRY time which is usually
+"now" but can be some time in the future if the task was deferred at
+some point. If it's time for a task to run we have to check the
+dependencies first - if some deps aren't yet satisfied the task goes
+back on the queue. Otherwise, action time! The task number is sent
+down SIW to mcfeely-spawn.
+
+Once all the tasks that can be attempted have been sent to
+mcfeely-spawn the do_select() function blocks mcfeely-manage until
+either the trigger is pulled again or SLEEPYTIME passes. (SLEEPYTIME
+== 60 as of this writing.) When mcfeely-manage wakes the first thing
+it does is looks for results from mcfeely-spawn, then it does
+scan_job() on "newj/" again and the loop continues. We'll examine
+read_results() in a while but first let's follow a task over to
+mcfeely-spawn.
+
+mcfeely-spawn is kind of icky because it is intimately tied with the
+Spawner.pm module. Once, in mcfeely's first incarnation, multiple
+programs used the Spawner code but now we just have mcfeely-spawn. So
+the Spawner could be folded back into mcfeely-spawn as a single piece
+of code and probably clean things up. Spawner has a doit() function
+which takes two subroutine references as arguments: the fork_sub and
+the pack_sub. Spawner waits for a line to arrive on STDIN and when
+that happens it runs the fork_sub. Strangely, it's up to the fork_sub
+to do the actual forking, but the idea is for the fork_sub to fork and
+do its thing with the input line while Spawner waits for the next
+line. When the fork_sub forks the parent should return two values - an
+identifier (the "slot") and the child's pid. The child of the fork_sub
+should produce a line of output which is read by the Spawner. The
+Spawner then passes the slot, the return code of the child, and the
+message from the child to the pack_sub. The pack_sub should produce a
+string which is printed on STDOUT by Spawner.
+
+The abstract description of Spawner probably doesn't make a lot of
+sense until you put it in the concrete setting of mcfeely-spawn. 
+mcfeely-spawn's fork_sub launches mcfeely-ttpc (the sub
+is called specifcally launch_ttpc) and returns as a slot number the
+task number being attempted. The message is the textual output of the
+task and the return code is the success, failure, or deferral of the
+task. Spawner then gives these three items to mcfeely-spawn's
+pack_result sub which packs them into a binary representation which
+gets sent back to mcfeely-manage.
+
+So if you step back and look at mcfeely-spawn as a whole, it takes a
+task number from mcfeely-manage, forks a ttpc to attempt the task, and
+returns the results to mcfeely-manage in a packed binary format. Not
+that complex.
+
+mcfeely-ttpc and mcfeely-ttpd are pretty direct. mcfeely-ttpc reads
+the task from stdin. The first thing it reads is the hostname. It uses
+the mcfeely hosts file to find the "real host" and port number for
+connecting to the remote host. Rather than just connect directly to
+the remote host on a standard port, our TTP2 connections are proxied
+over an ssh tunnel. So the "real host" should also be the same as the
+one on which ttpc is running and the port number is the proxy port
+specified in the hosts file. The name of the secret file for the
+remote host is also in the hosts file so ttpc gets the shared secret
+and sends it to the remote end first. It doesn't wait to see if the
+secret was accepted (the remote end will just disregard us if it's
+not) it sends down the task number, UID and GID (currently unused) and
+the specific command line for the task.
+
+On the mcfeely-ttpd side mcfeely-ttpd first reads off the secret and
+makes sure it matches. It then skips the UID and GID fields and reads
+the task command line. It checks the comm name in the task to make
+sure it doesn't contain '/' chars which would try to escape the
+predetermined comm directory. If it is satified the comm name is safe
+it splits the command line into an argument vector, forks, and
+execs. The parent waits for the exit status of the child. Based on the
+exit status the parent will send one of four possible one letter codes
+back to ttpc. 'K' if the comm was successful (for "OK" maybe?), 'F' if
+the comm had a permanent failure, or 'Z' to indicate deferral. 'Z' can
+result if the comm totally tanked for some reason, or if the comm
+produced an EXIT_SOFT, a temporary failure. Any output produced by the
+comm is also sent back to ttpc, but only the first line will be read
+by mcfeely-spawn.
+
+mcfeely-ttpc and mcfeely-ttpd communicate using netstrings as
+implemented in the knetstring library. netstrings are described at 
+[ URL ]
+
+Okay back on the server side mcfeely-spawn has read the results of
+ttpc, packed it according to pack_result() sub, and printed it on
+STDOUT. mcfeely-spawn's STDOUT is tied to SRR in mcfeely-manage so
+when mcfeely-manage calls read_results() as the last step of its loop
+read_results() reads off of SRR. pack_result() has terminated the
+result with an 0x4 char, aka EOT or ^D. Since the result is packed
+into a binary structure it's possible 0x4 might be a byte in the
+result that's not meant as EOT. So first we specific read
+$TASK_NUM_LENGTH bytes as the task number and TASK_CODE_LENGTH bytes
+for the result code. The rest of the result is printable ASCII so we
+just read it up to the 0x4.
+
+If the task was successful we mark it as such in the disk store by
+changing the first zero in the "info/" file to a 1. Record the text
+output in the job's file in the "rep/" directory. We call
+decrement_waiters() to decrement the count of all the tasks waiting on
+this one. decrement_waiters() uses walk_waiters() which is a piece of
+work in itself so let's look at that.
+
+walk_waiters() takes three args - a subroutine ref, a task, and a
+depth. It applies the subrountine to the given task, then it looks up
+any tasks waiting on this task and recursively applies the subroutine
+to them. It only recurses to the level specified by the depth
+parameter. So a depth of 1 will apply the sub to the given task and
+all its waiters, but not to any waiters of the waiters.
+
+So the implementation of decrement_waiters() is brief:
+
+sub decrement_waiters($) { walk_waiters { shift->[$TASK_NDEPS]-- } $_[0], 1 }
+
+This first decrements NDEPS of the current task (which makes it go to
+-1 but that's okay cause it's done). Then it decrements NDEPS for
+everyone who was waiting on this guy, so if their NDEPS reaches zero
+then they're green to go.
+
+Back in read_results() where we were, we also decrement the count of
+pending tasks in the job. If this count has reached zero the job is
+complete. (described below) If the task resulted in a temporary
+failure (deferral) we set TASK_NEXT_TRY to a time in the future based
+on an exponential backoff. The first retry will be 35 seconds
+later. (Although SLEEPYTIME is set to 60 so unless the trigger is
+pulled in the interval the first wait will be 60 seconds.) Then
+reinsert it in the priority queue. If the task sufferred a permanent
+failure this is noted in the job's "rep/" file and all the waiters on
+this task are defuncted with defunct_waiters(). That means we aren't
+going to even attempt to run the waiter since its dependency
+failed. We make a note that the job as a whole has failed. However we
+continue to attempt other tasks in the job provided they were not
+defuncted by the failure per above. We want to accomplish as much of
+the job as possible. Only if this was the last task in the job do we
+go ahead and finish the job.
+
+Finishing the job is straightforward. The contents of the "desc/" and
+"rep/" files are mailed to the supplied address so producing a
+description of the job and the results of all the tasks. The report
+goes to the "snot" or "fnot" address depending on whether the job
+succeeded or failed respectively. If the needed address is blank no
+report is produced. Next all the "task/" and "info/" files for the
+tasks in this job are unlinked. Then all the other ancillary files for
+the job (fnot, snot, rep, desc, and finally job) are unlinked and the
+job is complete.
+
+Hrm. What happens if the machine crashes or mcfeely is otherwise
+interrupted while a job is in the process of being unlinked? It would
+probably be confusing but not devastating. mcfeely tends to assume
+that the files it needs - for instance the "task/" file associated
+with a task number it reads from the "job/" file - it assumes the
+files will just be there. Hrm.
+

@@ -24,7 +24,8 @@ sub report($@) {
         plog "could not open rep/$job: $!";
         return;
     };
-    print REP @_, "\n";
+    print REP @_;
+    print REP "\n" unless (substr($_[-1], -1, 1) eq "\n");
     close REP;
 }
 
@@ -188,15 +189,22 @@ sub task_flag_done($) {
 # read the results from the spawner
 sub read_results() {
     my $line;
+    my $old_sep;
 
-    # Some of the packed data might resemble a newline (ascii 10) so
+    # Some of the packed data might resemble an EOT (ascii 4) so
     # we have to count the bytes.
     read SRR, $line, $TASK_NUM_LENGTH;
     $num = unpack 'L', $line;
     read SRR, $line, $TASK_CODE_LENGTH;
     $code = unpack 'c', $line;
-    # Now we can treat the rest as text.
+
+    # Now we can treat the rest normally. But we look for EOT instead
+    # of a newline.
+    # Preserve the seperator before we change it.
+    $old_sep = $/;
+    $/ = pack 'c', 0x4;
     chomp($msg = <SRR>);    
+    $/ = $old_sep;
 
     $task = task_lookup $num;
     --$Tasks_in_progress;

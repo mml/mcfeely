@@ -64,5 +64,8 @@ sub launch_ttpc {
 sub pack_result {
     my %args = @_;
 
-    return(pack('Lca*', $args{slot}, $args{status}, $args{msg}) . "\n");
+    # Tack an end-of-transmission at the end of msg.
+    $args{msg} .= pack 'c', 0x4;
+
+    return(pack('Lca*', $args{slot}, $args{status}, $args{msg}));
 }

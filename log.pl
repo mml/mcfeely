@@ -18,7 +18,10 @@
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
 # write log message to stdout
-sub plog(@) { print STDOUT @_, "\n" }
+sub plog(@) { 
+    print STDOUT @_;    
+    print STDOUT "\n" unless (substr($_[-1], -1, 1) eq "\n");
+}
 
 sub bail(@) { plog @_; exit 0 }
 
