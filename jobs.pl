@@ -52,18 +52,18 @@ sub scan_job($$) {
         plog "Could not open $dir: $!";
         return undef;
     };
-    JOB: while (defined($file = files(JOBD))) {
+    GET_JOB: while (defined($file = files(JOBD))) {
         plog "$file new job" if $log_new;
         open DESC, "desc/$file" or do {
             plog "Could not open desc/$file: $!";
-            next JOB;
+            next GET_JOB;
         };
         plog "$file info: ", <DESC>;
         close DESC;
         $job = job_new_job $JOB_INO => $file;
         open JOB, "$dir/$file" or do {
             plog "Could not open $dir/$file: $!\n";
-            next JOB;
+            next GET_JOB;
         };
         seek JOB, 1, 1; #XXX: does this belong abstracted?
         TASK: while (job_read_task(JOB, $tasknum)) {
