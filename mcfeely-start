@@ -3,7 +3,10 @@
 use strict;
 use Fcntl;
 
-chdir '/home/mliggett/mcfeely-test';
+require 'chdir.pl';
+require 'log.pl';
+
+&chdir_top or &bail("Could not chdir: $!");
 
 pipe SIR, SIW;
 pipe SRR, SRW;
