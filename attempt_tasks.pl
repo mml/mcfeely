@@ -30,3 +30,5 @@ sub attempt_tasks() {
         ++$Tasks_in_progress;
     }
 }
+
+1;

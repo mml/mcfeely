@@ -7,3 +7,5 @@ sub do_select() {
     select($rout=$rin, undef, undef, SLEEPYTIME);
     close(TRIGGER);
 }
+
+1;
