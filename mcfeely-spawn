@@ -66,8 +66,12 @@ my %Msg;           # the message from the comm
 
 # when our children die, we must reap
 $SIG{'CHLD'} = \&reaper;
-# we want to ignore sig TERM 
-$SIG{'TERM'} = 'IGNORE';
+# we want to ignore signals that would normall cause us to 
+# terminate, we want to terminate only when mcfeely-manage
+# has gone away
+foreach (qw(HUP INT QUIT ILL PIPE ALRM TERM USR1 USR2)) {
+    $SIG{$_} = 'IGNORE';
+}
 
 # get in and out from the command line
 $in  = shift;

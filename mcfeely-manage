@@ -31,9 +31,11 @@ use IO::Select;
 use IO::Dir;
 use POSIX qw(:sys_wait_h);
 
-
+# set some explicit signal handlers
 $SIG{CHLD} = \&reaper;
-$SIG{TERM} = \&killer;
+foreach (qw(HUP INT QUIT ILL PIPE ALRM TERM USR1 USR2)) {
+    $SIG{$_} = \&killer;
+}
 
 use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job
              $rout $rin $srr $siw $select $Srr_readbuffer);
