@@ -1,0 +1,32 @@
+use Spawner;
+use strict;
+
+require 'log.pl';
+
+$| = 1;
+
+chdir '/home/mliggett/mcfeely-test' or bail("cannot chdir: $!");
+
+&init;
+&doit(\&launch_ttpc, \&pack_task_result);
+
+sub launch_ttpc {
+	my $ino = shift;
+    chomp $ino;
+	my $pid;
+
+	if (!defined ($pid = fork)) {
+		return($ino, undef);
+	} elsif ($pid == 0) {
+        open STDIN, "queue/task/$ino"
+            or soft "trouble opening queue/task/$ino: $!";
+		open(STDOUT, '>&main::WP')
+			or soft "trouble duping STDOUT: $!";
+		close STDERR;
+		#open(STDERR, '>&main::WP')
+		#	or soft "trouble duping STDERR: $!";
+		exec 'bin/mcfeely-ttpc' or soft "Couldn't exec tcpclient: $!";
+	} else {
+		return($ino, $pid);
+	}
+}
