@@ -1,0 +1,10 @@
+mcfeely is a set of programs that automate the asynchronous execution
+of programs on remote (or local) hosts.  It supports a retry mechanism
+analogous to what mail daemons do.  It supports batching up a bunch of
+tasks together as a job.  The job can have complex dependencies (e.g.
+task A depends upon task B which depends on both tasks C and D and
+task C depends upon task D).  Reports of failure and (optionally)
+success are emailed for each job.
+
+Using some simple port redirection and ssh tunnels, you can encrypt
+all mcfeely inter-host transmissions.

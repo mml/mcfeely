@@ -1,0 +1,45 @@
+# $Id: mcfeely.spec.in,v 1.1 1999/07/20 14:34:15 mliggett Exp $
+Summary: asynchronous task execution on multiple hosts
+Name: mcfeely
+Version: @version@
+Release: 1
+Copyright: GPL
+Group: Daemons
+Source: mcfeely-@version@.tar.gz
+BuildRoot: /tmp/mcfeely-build
+Packager: Matt Liggett <mml@pobox.com>
+Vendor: Kiva Networking
+%description
+@BLURB@
+
+%prep
+%setup
+
+%build
+make
+
+%install
+make ROOT="$RPM_BUILD_ROOT" rpminstall
+
+%files
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
+%attr(- @MCUSER@   @QGROUP@ )      @TOPDIR@/bin/mcfeely-queue
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-manage
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-spawn
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpd
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/task
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/info
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/desc
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/newj
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/job
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/fnot
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/snot
+%attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm
+%attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely
