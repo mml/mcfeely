@@ -60,7 +60,7 @@ sub finish_job($) {
         unlink "$_/$job->[$JOB_INO]" or plog "Could not unlink $_/$job->[$JOB_INO]: $!";
     }
 
-    plog "end job $job->[$JOB_INO]";
+    plog "$job->[$JOB_INO] end job";
 
 }
 
@@ -107,8 +107,12 @@ sub defunct_waiters($) {
     my $job = $_[0]->[$TASK_JOB];
 
     walk_waiters {
-        $task->[$TASK_DEFUNCT] = 1;
-        --$job->[$JOB_NDEPS];
+        my $task = shift;
+        my $job = $task->[$TASK_JOB];
+        unless ($task->[$TASK_DEFUNCT]) {
+            $task->[$TASK_DEFUNCT] = 1;
+            --$job->[$JOB_NTASKS];
+        }
     } $_[0], -1;
 }
 
@@ -135,7 +139,7 @@ sub read_results() {
     if ($code eq $TASK_SUCCESS_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "transfer task $num: success: $msg";
+        plog "$job->[$JOB_INO]:$num success: $msg";
         task_flag_done $num;
         $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
         report $job->[$JOB_INO], "task $num: success: $msg";
@@ -143,7 +147,7 @@ sub read_results() {
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     } elsif ($code eq $TASK_DEFERRAL_CODE) {
-        plog "transfer task $num: deferral: $msg";
+        plog "$job->[$JOB_INO]:$num deferral: $msg";
         # exponential backoff stolen from djb
         $task->[$TASK_NEXT_TRY] =
             $task->[$TASK_BIRTH] +
@@ -153,11 +157,10 @@ sub read_results() {
     } elsif ($code eq $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "transfer task $num: failure: $msg";
+        plog "$job->[$JOB_INO]:$num failure: $msg";
         report $job->[$JOB_INO], "task $num: failure: $msg";
         defunct_waiters $task;
         $job->[$JOB_FAILED] = 1;
-        $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     }
 }
