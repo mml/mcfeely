@@ -115,6 +115,11 @@ If you wish to run mcfeely-ttpd from inetd add the following to
 
   ttp2    stream tcp      nowait  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
 
+If you are going to be running mcfeely with a large number of tasks
+you will need to change the default maximum number of connections from
+40 to something higher by changing 'nowait' to 'nowait.80' or
+something along those lines.
+
 If you wish you can use a tool like tcpserver from Dan Bernstein (of
 qmail fame, see www.qmail.org) instead of inetd:
 
