@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use McFeely::Internal;
+
 require 'chdir.pl';
 require 'log.pl';
 

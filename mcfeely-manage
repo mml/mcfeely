@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # vi:ts=4:sw=4:sm:ai:et:
 
+use McFeely::Internal;
 use Select;
 use Fcntl;
 use IO::File;
