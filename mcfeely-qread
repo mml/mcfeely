@@ -77,7 +77,7 @@ sub scan_jobs($) {
         open JOB, "$dir/$file" or die "$dir/$file: $!\n";
         $ctime = (stat JOB)[10];
         if ($Watcher) {
-            next JOB if ($ctime < (time - $AGE_SECONDS));
+            next JOB unless ($ctime < (time - $AGE_SECONDS));
         }
         $ctime = localtime $ctime;
         read(JOB, $failed, 1);
