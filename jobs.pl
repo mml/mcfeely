@@ -54,6 +54,7 @@ sub scan_job($$) {
 
             # if we got a task back, we can assume it NEEDS_DONE
             # see also sub task_new_task_from_file
+            task_insert $task;
             task_enqueue $task;
             $job->[$JOB_NTASKS]++;
 
