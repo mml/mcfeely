@@ -153,6 +153,7 @@ char *args[];
 {
     int n;
     int i;
+    char skipfirst = 1;
     char *s;
 
     /* XXX: I think maybe we can bum some instructions or variables here, but I
@@ -162,7 +163,11 @@ char *args[];
     s = (char *)buf.start;
     for (i = 0; i < buf.len; ++i)
         if (((char *)buf.start)[i] == '\0') {
-            args[n++] = s;
+            if (skipfirst) {
+                skipfirst = 0;
+            } else {
+                args[n++] = s;
+            }
             s = (char *)buf.start + i + 1;
         }
 }
