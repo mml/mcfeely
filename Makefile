@@ -7,7 +7,8 @@ SOURCES	= attempt_tasks.pl do_select.pl files.pl jobs.pl log.pl \
 	  exit-codes.h make-mcfeely-pm.c
 
 OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
-	  copy_bytes.o safe_read.o safe_write.o mcfeely-ttpc.o hostport.o
+	  copy_bytes.o safe_read.o safe_write.o mcfeely-ttpc.o hostport.o \
+	  make-mcfeely-pm.o mcfeely-ttpd.o
 
 TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm McFeely.pm
 
