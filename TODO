@@ -1,8 +1,18 @@
+
+o Spawner either in the distribution or folded into
+  mcfeely-client. Adrian believes this is top priority.
+  (2000.0515)
+o minimize the kiva aspects in this and other rpms so we can have
+  a more general distribution (2000.0515)
+o generic non kiva specific init scripts
+  matt says he's working on this one (2000.0515)
+o a suite of test and example comms  (2000.0515)
+
+Stuff in here prior to May 15, 2000
+
 o post-tape-recovery queue fixer
 o make sure we're really writing to file every time we think we are
 o firewall stuff
-o need a mcfeely-kiva rpm (completely separate from this repository)
-  that we can slap on top?
 o improve report readibility (some changes made, but there's room for
   more)
 o abstract the mailing in mail_report so it is not dependendent on
@@ -12,3 +22,5 @@ o in mcfeely-ttpd.c a write is made to the the pipe when 'program not
 o BUG: If the client side does not return any exit code at all, the
   server side seems to get confused, neither reporting the problem,
   trying again, or failing the task.
+
+
