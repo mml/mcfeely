@@ -7,6 +7,8 @@ o minimize the kiva aspects in this and other rpms so we can have
 o generic non kiva specific init scripts
   matt says he's working on this one (2000.0515)
 o a suite of test and example comms  (2000.0515)
+o get add_tasks to only accept Task (and children) references
+  (2000.0526)
 
 Stuff in here prior to May 15, 2000
 

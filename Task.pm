@@ -119,7 +119,6 @@ sub EXIT_OK()   {   0 }
 
 # create the object and return a reference to the
 # the list that makes up the task
-# cjd is adding some input validation
 sub new {
     my $class = shift;
     my $self  = [ @_ ] ;
@@ -141,7 +140,7 @@ sub _process_comm {
     my $self = shift;
 
     # make sure the comm is provided
-    if ($self->[COMM] eq '' || !defined($self->[COMM])) {
+    if ($self->[COMM] !~ /\w+/ || !defined($self->[COMM])) {
         die "comm: no comm provided\n";
     }
 }
@@ -157,7 +156,7 @@ sub _process_host {
     my $hostname;
 
     # make sure the hostname is provided
-    if ($self->[HOST] eq '' || !defined($self->[HOST])) {
+    if ($self->[HOST] !~ /\w+/ || !defined($self->[HOST])) {
         die "hostname: no hostname provided\n";
     }
 

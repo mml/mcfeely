@@ -1,3 +1,4 @@
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
 #
@@ -59,7 +60,9 @@ Sets the description.
 
 =item add_tasks( TASK, [TASK, ...] )
 
-Adds the listed C<McFeely::Task>s to the job.
+Adds the listed C<McFeely::Task>s to the job. If the provided
+task references are not defined or are empty strings then die.
+If you don't want to die in add_tasks, run add_tasks in an eval.
 
 =item list_tasks
 
@@ -82,9 +85,9 @@ attempted.
 L<McFeely::Task>,
 L<McFeely::Metatask>
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Matt Liggett, mml@pobox.com
+Matt Liggett <mml@pobox.com>, Chris Dent <cdent@kiva.net>
 
 =cut
 
@@ -100,32 +103,40 @@ sub new {
     $self->snot('');
     $self->fnot('');
     $self->desc('');
-    $self->add_tasks(@_);
+    if (@_) {
+        $self->add_tasks(@_);
+    }
     return $self;
 }
 
 sub fnot {
     my $self = shift;
 
-    $self->{fnot} = shift;
+    $self->{'fnot'} = shift;
 }
 
 sub snot {
     my $self = shift;
 
-    $self->{snot} = shift;
+    $self->{'snot'} = shift;
 }
 
 sub desc {
     my $self = shift;
 
-    $self->{desc} = shift;
+    $self->{'desc'} = shift;
 }
 
 sub add_tasks {
     my $self = shift;
 
-    push @{$self->{tasks}}, @_;
+    foreach (@_) {
+        if (!defined($_) || $_ !~ /\w+/) {
+            die "add_tasks: provided arg is not a McFeely::Task reference\n";
+        }
+        push @{$self->{tasks}}, $_;
+    }
+    return $self;
 }
 
 sub list_tasks {
@@ -143,13 +154,13 @@ sub add_dependencies {
 sub _set_errstr {
     my $self = shift;
 
-    $self->{errstr} = shift;
+    $self->{'errstr'} = shift;
 }
 
 sub errstr {
     my $self = shift;
 
-    $self->{errstr};
+    $self->{'errstr'};
 }
 
 sub enqueue {

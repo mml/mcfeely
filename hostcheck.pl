@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
-# $Id: hostcheck.pl,v 1.1.2.1 2000/05/26 01:24:46 cdent Exp $
+# $Id: hostcheck.pl,v 1.1.2.2 2000/05/26 19:52:44 cdent Exp $
 
 # mcfeely-task-test
 # inject a single task
@@ -37,7 +37,10 @@ my $task;
 make_task(\$task, \$host, \$comm, \@args);
 
 # add the task to the job
-$job->add_tasks($task);
+eval { $job->add_tasks($task);
+} || do {
+    die "$@";
+};
 
 # enqueue the job
 $job->enqueue() ||
@@ -99,7 +102,7 @@ sub make_task {
     my $argref  = shift;
 
     # try
-    eval { $taskref   = McFeely::Task->new($$hostref,
+    eval { $$taskref   = McFeely::Task->new($$hostref,
                                            $$commref,
                                            @$argref,
                                    );
@@ -111,18 +114,15 @@ sub make_task {
             $$commref = get_comm($commref);
             @$argref  = get_comm_args($argref);
             make_task($taskref, $hostref, $commref, $argref);
-        }
-        if ($@ =~ /^comm:/) {
+        } elsif ($@ =~ /^comm:/) {
             print "$@\n";
             $$hostref = get_hostname($hostref);
             $$commref = get_comm($commref);
             @$argref  = get_comm_args($argref);
             make_task($taskref, $hostref, $commref, $argref);
+        } else {
+            die "error: $@\n";
         }
-        die "$@\n";
     };
 
-    print "task: @$taskref\n";
 }
-    
-                             
