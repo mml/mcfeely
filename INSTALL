@@ -1,0 +1,11 @@
+Put the top-level directory for installation in TOPDIR.
+
+Put the user that owns certain dirs and files in ROOTUSER.
+
+Put the mcfeely user in MCUSER.
+
+Put the mcfeely group in MCGROUP.
+
+Put the group that has queueing permission in QGROUP.
+
+# make install
