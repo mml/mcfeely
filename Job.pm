@@ -97,6 +97,9 @@ sub new {
     my $class = shift;
     my $self = bless {}, $class;
 
+    $self->snot('');
+    $self->fnot('');
+    $self->desc('');
     $self->add_tasks(@_);
     return $self;
 }
