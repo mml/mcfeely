@@ -183,6 +183,7 @@ char *args[];
             }
             s = (char *)buf.start + i + 1;
         }
+    args[n] = NULL;
 }
 
 void
