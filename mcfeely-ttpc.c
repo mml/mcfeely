@@ -80,6 +80,8 @@ char *argv[];
     /* tcp socket */
     tcp = getprotobyname("tcp");
     s = socket(AF_INET, SOCK_STREAM, tcp->p_proto);
+    if (s == -1) soft("cannot open socket", 18);
+
 
     i = host;
     do {

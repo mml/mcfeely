@@ -109,6 +109,8 @@ sub finish_job($) {
 
     $jobhandle->open("job/$job->[$JOB_INO]") or
         plog "Could not open job/$job: $!";
+    # XXX: wait, if we fail here on this open we don't want to then
+    #      seek, something else needs to happen. what? cjd 2000.0621
     seek $jobhandle, 1, 1;
     while (job_read_task($jobhandle, \$tasknum)) {
         foreach (qw(task info)) {
