@@ -69,6 +69,7 @@ SPECFILE	= $(PROJECT).spec
 RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-client-$(VERSION)-1.i386.rpm $(RPMDIR)/RPMS/i386/$(PROJECT)-server-$(VERSION)-1.i386.rpm
 SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva/RPMS/i386
+WWWLOC		= www.kiva.net:~systhug/www/mcfeely
 
 .PHONY: all install rpminstall dist rpm ftp clean
 .INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
@@ -167,6 +168,12 @@ do-rpm: $(TARFILE) $(SPECFILE)
 
 ftp: $(RPMFILE)
 	scp $(RPMFILE) $(FTPLOC)
+
+www: $(RPMFILE) $(TARFILE) $(SRPMFILE)
+	scp $(RPMFILE) $(WWWLOC)/dist
+	scp $(SRPMFILE) $(WWWLOC)/dist
+	scp $(TARFILE) $(WWWLOC)/dist
+
 
 $(SPECFILE): $(SPECFILE).in version BLURB TOPDIR ROOTUSER MCUSER MCGROUP \
 	QGROUP PERLDIR
