@@ -224,7 +224,8 @@ mcfeely.h: mcfeely.h.in TOPDIR
 	    < $< > $@
 
 PERLDIR:
-	perl -MConfig -e 'print $$Config{sitelib}, "\n"' > $@
+	perl -MConfig -e 'print $$Config{sitelib}, "\n"' | \
+	perl -p -e 's/\/[\d\.]+$$//' > $@
 
 
 tags: *.c *.h
