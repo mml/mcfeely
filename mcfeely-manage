@@ -12,13 +12,14 @@ require 'attempt_tasks.pl';
 require 'do_select.pl';
 require 'read_results.pl';
 
-chdir_top or bail "Could not chdir: ", McFeely->errmsg, "; exiting.";
+chdir '/home/mliggett/mcfeely-test' or bail("Could not chdir: $!; exiting.");
+chdir 'queue' or bail("Could not chdir: $!; exiting.");
 
-scan_job 'job', 0;
+scan_job('job', 0);
 
 until ($Asked_to_exit && safe_to_exit) {
-    scan_job 'newj', 1;
-    attempt_tasks;
-    do_select;
-    read_results;
+    scan_job('newj', 1);
+    attempt_tasks();
+    do_select();
+    read_results();
 }
