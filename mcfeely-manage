@@ -1,7 +1,20 @@
 #!/usr/bin/perl
 # vi:ts=4:sw=4:sm:ai:et:
 
-use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job );
+use Select;
+use Fcntl;
+use IO::File;
+
+use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job $rout $rin );
+
+my $in = shift;
+my $out = shift;
+
+open SRR, "<&=$in" or die "open SIR (fd $in): $!\n";
+$rout = $rin = '';
+FD_SET(SRR, $rin);
+open SIW, ">&=$out" or die "open SIW (fd $out): $!\n";
+select SIW; $| = 1; select STDOUT; $| = 1;
 
 require 'const.pl';
 require 'log.pl';
