@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+use strict;
+
+chdir '/home/mliggett/mcfeely-test';
+
+pipe SIR, SIW;
+pipe SRR, SRW;
+fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK);
+
+my $pid = fork;
+if (!defined $pid) {
+    die "cannot fork: $!\n";
+} elsif ($pid == 0) {
+    close SIW; close SRR;
+    open STDIN, '<&SIR';
+    open STDOUT, '>&SRW';
+    exec 'bin/mcfeely-spawn';
+}
+
+close SIR; close SRW;
+exec 'bin/mcfeely-manage';
