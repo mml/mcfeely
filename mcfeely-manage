@@ -29,6 +29,8 @@ require 'read_results.pl';
 chdir '/home/mliggett/mcfeely-test' or bail("Could not chdir: $!; exiting.");
 chdir 'queue' or bail("Could not chdir: $!; exiting.");
 
+plog("starting");
+
 scan_job('job', 0);
 
 until ($Asked_to_exit && safe_to_exit) {
@@ -37,3 +39,5 @@ until ($Asked_to_exit && safe_to_exit) {
     do_select();
     read_results();
 }
+
+plog("exiting");
