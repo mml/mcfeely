@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.14 1999/09/30 20:54:00 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.15 2000/02/09 21:32:19 ahosey Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -88,6 +88,8 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-manage
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-spawn
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/secretmaker
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/control/secrets
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
@@ -100,9 +102,7 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/snot
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/rep
 %attr(- @MCUSER@   @MCGROUP@)      @TOPDIR@/queue/trigger
-%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/secretmaker
 
 %files client
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpd
-%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
