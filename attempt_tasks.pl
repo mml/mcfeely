@@ -12,8 +12,6 @@ sub attempt_tasks() {
     my $now = time;
     my @ntasks;
 
-    plog "welcome to the attempt_tasks program!";
-
     TASK: for ($i = 0; $i <= $#Tasks; ++$i) {
         $task = $Tasks[$i];
 
@@ -30,7 +28,7 @@ sub attempt_tasks() {
         if ($task->[$TASK_NDEPS] > 0) {
             push @ntasks, $task;
         } else {
-            plog "attempt task $task->[$TASK_INO] job $task->[$TASK_JOB]->[$JOB_INO]";
+            plog "starting transfer task $task->[$TASK_INO]: job $task->[$TASK_JOB]->[$JOB_INO] on $task->[$TASK_HOST]";
             write_to_spawner $task->[$TASK_INO];
             $task->[$TASK_NEXT_TRY] = $now;
             ++$Tasks_in_progress;
