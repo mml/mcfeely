@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.2 2000/07/19 16:37:35 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.3 2000/07/19 19:30:34 jeremy Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -68,8 +68,7 @@ make
 %install
 make ROOT="$RPM_BUILD_ROOT" rpminstall
 
-%post
-%triggerin -- NetKit-B, netkit-base, inetd
+%post client
 # Update /etc/inetd.conf
 if ! grep -q '[# \t]*ttp2' /etc/inetd.conf ; then
         echo >> /etc/inetd.conf
@@ -79,7 +78,7 @@ if ! grep -q '[# \t]*ttp2' /etc/inetd.conf ; then
         fi
 fi
 
-%postun
+%postun client
 if [ "$1" = 0 ] ; then
         # remove ttp2 from /etc/inetd.conf if it is there
         if [ -f /etc/inetd.conf ] &&
@@ -91,9 +90,10 @@ if [ "$1" = 0 ] ; then
 fi
 
 
-%files common
-%doc COPYING HOWTO INSTALL MANIFEST README docs/DESIGN docs/OVERVIEW 
-%doc docs/perl-interface.txt docs/ttp2.txt
+%files common 
+%doc %attr(-,root,root) COPYING HOWTO INSTALL MANIFEST README 
+%doc %attr(-,root,root) docs/DESIGN docs/OVERVIEW docs/perl-interface.txt 
+%doc %attr(-,root,root) docs/ttp2.txt
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
