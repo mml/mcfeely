@@ -190,7 +190,13 @@ sub enqueue {
     $pipe2 = new IO::Pipe;
     if ($pid = fork) {
         # parent; just cascade through
-        foreach ($pipe0, $pipe1, $pipe2) { $_->writer }
+        foreach ($pipe0, $pipe1, $pipe2) { 
+            $_->writer;
+            # these pipes need to autoflush or the other end 
+            # gets confused where data isn't coming through 
+            # properly
+            $_->autoflush(1);
+        }
     } elsif ($pid == 0) {
         # child; fork and exec
         foreach ($pipe0, $pipe1, $pipe2) { $_->reader }

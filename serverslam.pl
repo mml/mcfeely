@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
-# $Id: serverslam.pl,v 1.2 2000/07/06 00:16:28 cdent Exp $
+# $Id: serverslam.pl,v 1.3 2000/07/18 05:23:10 cdent Exp $
 
 # A tool for beating the piss out of a mcfeely-server client combo
 # initially just does one one server and one client
@@ -38,12 +38,15 @@ foreach $count (1 .. $job_iterations) {
     $job{$count}->snot($snot);
     $job{$count}->fnot($fnot);
 
+    my $taskcounter = 0;
     my $taskcount;
     my %task;
     foreach $taskcount (1 .. (int(rand($task_iterations)) + 1)) {
         $task{$taskcount} = new McFeely::Task($host, $comm, $taskcount);
         $job{$count}->add_tasks($task{$taskcount});
+        $taskcounter++;
     }
+    print "injected job $count with $taskcounter tasks\n";
 }
 
 foreach $count (1 .. $job_iterations) {

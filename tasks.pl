@@ -17,6 +17,9 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use McFeely::Log;
+use McFeely::Const;
+
 sub task_new_task(@) {
     my $key;
     my $val;
@@ -90,6 +93,7 @@ sub task_lookup($) {
 sub task_enqueue($) {
     my $task = shift;
 
+    my $i;
     for ($i = 0; $i <= $#Tasks; ++$i) {
         if ($task->[$TASK_NEXT_TRY] <= $Tasks[$i]->[$TASK_NEXT_TRY]) {
             splice @Tasks, $i, 0, $task;

@@ -21,7 +21,7 @@
 
 PROJECT	= mcfeely
 
-SOURCES	= attempt_tasks.pl do_select.pl files.pl jobs.pl log.pl \
+SOURCES	= attempt_tasks.pl files.pl jobs.pl \
 	mcfeely-manage mcfeely-queue.c mcfeely.h \
 	read_results.pl safe_to_exit.pl tasks.pl hostport.c hostport.h \
 	mcfeely-ttpc.c exit-codes.h make-mcfeely-pm.c make-chdir-pl.c \
@@ -101,13 +101,13 @@ install: all PERLDIR
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0444 McFeely.pm `cat PERLDIR`
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0755 -d `cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm Internal.pm; do \
+	for i in Job.pm Task.pm Metatask.pm Internal.pm Log.pm Const.pm; do \
 		install -o $(ROOTUSER) -g $(QGROUP) -m 0444 $$i \
 			`cat PERLDIR`/McFeely ;\
 	done
 
-	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl \
-		chdir.pl do_select.pl jobs.pl read_results.pl tasks.pl; do \
+	for i in attempt_tasks.pl files.pl safe_to_exit.pl \
+		chdir.pl jobs.pl read_results.pl tasks.pl; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0644 $$i \
 			`./topdir`/lib/perl; \
 	done
@@ -142,12 +142,12 @@ rpminstall: all PERLDIR
 	install -m 0444 McFeely.pm $(ROOT)/`cat PERLDIR`
 	install -m 0755 -d $(ROOT)/`cat PERLDIR`/McFeely
 
-	for i in Job.pm Task.pm Metatask.pm Internal.pm; do \
+	for i in Job.pm Task.pm Metatask.pm Internal.pm Log.pm Const.pm; do \
 		install -m 0444 $$i $(ROOT)/`cat PERLDIR`/McFeely ;\
 	done
 
-	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl \
-		chdir.pl do_select.pl jobs.pl read_results.pl tasks.pl; do \
+	for i in attempt_tasks.pl files.pl safe_to_exit.pl \
+		chdir.pl jobs.pl read_results.pl tasks.pl; do \
 		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
 	done
 
@@ -256,7 +256,8 @@ print:
 createtestdir: McFeely.pm Internal.pm chdir.pl
 	-mkdir McFeely
 	cd McFeely && ln -sf ../Job.pm && ln -sf ../Task.pm && \
-		ln -sf ../Metatask.pm && ln -sf ../Internal.pm
+		ln -sf ../Metatask.pm && ln -sf ../Internal.pm && \
+		ln -sf ../Log.pm && ln -sf ../Const.pm
 
 .pm.html: Metatask.pm Job.pm Task.pm
 	pod2html $< > $*.html

@@ -18,6 +18,9 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use McFeely::Log;
+use McFeely::Const;
+
 # send instructions to the spawner
 sub write_to_spawner($) {
     my $ino = shift;
@@ -31,9 +34,6 @@ sub write_to_spawner($) {
         return 0;
     }
     return 1;
-#    $siw->print("$ino\n") && return 1;
-#    $siw->printflush("$ino\n") && return 1;
-#    return 0;
 }
 
 # attempt all tasks whose times have come

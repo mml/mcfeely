@@ -18,6 +18,9 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use McFeely::Log;
+use McFeely::Const;
+
 sub report($@) {
     my $job = shift;
 
@@ -151,6 +154,7 @@ sub walk_waiters(&$$) {
         return undef;
     };
 
+    my ($waitino, $waiter);
     while ($info->sysread($waitino, 4) == 4) {
         $waitino = unpack 'L', $waitino;
         $waiter = task_lookup $waitino;

@@ -26,6 +26,6 @@
 
 char buf[BUFSIZE];
 ino_t job_ino;
-ino_t ino[256];
+ino_t ino[16384];
 int ino_num;
 

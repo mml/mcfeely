@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.17 2000/07/06 00:16:28 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.18 2000/07/18 05:23:10 cdent Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -79,6 +79,8 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Job.pm
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Metatask.pm
 %attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Task.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Const.pm
+%attr(- @ROOTUSER@ @QGROUP@)       @PERLDIR@/McFeely/Log.pm
 
 %files server
 %attr(- @MCUSER@   @QGROUP@ )      @TOPDIR@/bin/mcfeely-queue
