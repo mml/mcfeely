@@ -58,6 +58,7 @@ get_info(void)
             if (buf[0] >= ino_num) _exit(1);
             safe_write(fnfd, &(ino[(int)buf[0]]), sizeof(ino_t));
         }
+        read_comma(1);
         close(fnfd);
     }
     close(1);
