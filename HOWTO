@@ -85,7 +85,7 @@ secret-file is the IP of the client.
 
 The second and third fields allow you to use ssh tunnels if you like.
 This is not required, and if you don't understand ssh tunnels you may
-want to ask on the mailing list about how to do this. But if you wan
+want to ask on the mailing list about how to do this. But if you want
 to do it see the ssh instructions below.
 
 Next, we need to create a secret that is to be shared between the
