@@ -1,4 +1,6 @@
 
+o when a task fails if there are dependencies make sure the report
+  includes the name of the comm
 o mv the files in /opt/mcfeely/lib/perl into the mcfeely-server
   rpm since they are only used by mcfeely-server. this poses
   some weird directory conflict issues with mcfeely-common though.
