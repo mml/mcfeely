@@ -28,12 +28,5 @@ sub do_select() {
     close(TRIGGER);
 }
 
-sub fd_set(*\$) {
-    my $fd = fileno ${shift @_};
-    my $setref = shift;
-
-    vec($$setref, $fd, 1) = 1;
-}
-
 
 1;
