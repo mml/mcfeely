@@ -244,10 +244,10 @@ clean:
 print:
 	nenscript -1R $(SOURCES)
 
-createtestdir: McFeely.pm
+createtestdir: McFeely.pm Internal.pm chdir.pl
 	-mkdir McFeely
 	cd McFeely && ln -sf ../Job.pm && ln -sf ../Task.pm && \
-		ln -sf ../Metatask.pm
+		ln -sf ../Metatask.pm && ln -sf ../Internal.pm
 
 .pm.html: Metatask.pm Job.pm Task.pm
 	pod2html $< > $*.html

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -19,9 +20,17 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
-use McFeely::Internal;
-use Spawner;
 use strict;
+no strict 'subs';
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
+
+use McFeely::Internal;
+use POSIX;
+use IO::Select;
+#use IO::File;
+use IO::Handle;
+use Fcntl;
+use Symbol;
 
 require 'chdir.pl';
 require 'log.pl';
@@ -69,3 +78,112 @@ sub pack_result {
 
     return(pack('Lca*', $args{slot}, $args{status}, $args{msg}));
 }
+
+
+my %Fh;
+my %Slot;
+my %Stat;
+my %Msg;
+
+sub EXIT_HARD() { 100 }
+sub EXIT_SOFT() { 99 }
+sub EXIT_OK() { 0 }
+
+sub safe_string(@) {
+	my $string = join '', @_;
+
+	$string =~ s/\s+$//;
+	$string =~ s/\s+/_/g;
+	return $string;
+}
+
+sub init { $SIG{CHLD} = \&reaper }
+
+sub doit {
+	my $fork_sub = shift;
+	my $pack_sub = shift;
+
+	my $buf;
+	my $fh;
+	my $flags;
+	my $line;
+    my @ready_to_read;
+	my $ok;
+	my $oldsigset;
+	my $pid;
+	my $rin;
+	my $rout;
+	my $sig_chld_set;
+	my $slot;
+	my $stage;
+	my @instructions;
+	my @lines;
+
+	select STDOUT; $| = 1;
+
+    #my $stdin_handle = new IO::File(\*STDIN) || die "new file fail: $!";
+    # create the files we are going to be selecting on
+    my $select = new IO::Select();
+    #$select->add($stdin_handle);
+    $select->add(\*STDIN);
+
+	$sig_chld_set = POSIX::SigSet->new(&POSIX::SIGCHLD);
+	$oldsigset = POSIX::SigSet->new;
+
+    # loop
+	while (1) {
+		# wait for some data or a signal
+        #$stdin_handle->blocking(1);
+        STDIN->blocking(1);
+        @ready_to_read = $select->can_read(240);
+
+		# read instructions
+        #$stdin_handle->blocking(0);
+        STDIN->blocking(0);
+		$stage .= $buf
+			while (defined($ok = sysread STDIN, $buf, 1024)
+                and $ok > 0);
+		return unless $! == POSIX::EWOULDBLOCK;
+
+		# load lines
+		if (defined $stage) {
+			push @lines, $& while $stage =~ s/^.*\n//;
+		}
+
+		# follow instructions
+		while ($line = shift @lines) {
+			pipe(($fh = &gensym), main::WP);
+			sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
+			($slot, $pid) = &$fork_sub($line);
+			$Slot{$pid} = $slot;
+			$Fh{$pid} = $fh;
+			sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);
+		}
+
+		# dig the results
+		PID: foreach $pid (keys %Stat) {
+			print &$pack_sub(slot => $Slot{$pid},
+			                 status => $Stat{$pid},
+							 msg => $Msg{$pid});
+			delete $Slot{$pid};
+			delete $Stat{$pid};
+			delete $Msg{$pid};
+		}
+
+	}
+}
+
+sub reaper {
+	my $baby;
+	my $fh;
+
+	while (($baby = waitpid(-1, &WNOHANG)) > 0) {
+		$fh = $Fh{$baby}; # XXX: Oi!
+		$Stat{$baby} = ($? >> 8);
+		fcntl($fh, F_SETFL, fcntl($fh, F_GETFL, 0)|O_NONBLOCK);
+		$Msg{$baby} = <$fh>;
+		close $fh;
+		delete $Fh{$baby};
+	}
+}
+
