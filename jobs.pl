@@ -18,6 +18,9 @@
 #
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
+use McFeely::Log;
+use McFeely::Const;
+
 sub job_read_task($$) {
     my $fileref = shift;
     my $numref = shift;
@@ -106,6 +109,7 @@ sub scan_job($$) {
         # numbers. Look up those numbers in %task and replace them
         # with the actual task references.
         foreach $task (keys %task) {
+            my $i;
             for ($i = 0; $i <= $#{$task->[$TASK_WAITERS]}; ++$i) {
                 splice @{$task->[$TASK_WAITERS]}, $i, 1,
                        $task{$task->[$TASK_WAITERS]->[$i]};

@@ -22,12 +22,12 @@
 
 use strict;
 use McFeely::Internal;
+use McFeely::Log;
 use Fcntl;
 use IO::Handle;
 use IO::Pipe;
 
 require 'chdir.pl';
-require 'log.pl';
 
 chdir_top() or bail("Could not chdir: $!");
 

@@ -19,6 +19,7 @@
 */
 
 #include "mcfeely-queue.h"
+#include <errno.h>
 
 void
 copy_bytes(num, src, dest)
@@ -27,16 +28,43 @@ int src;
 int dest;
 {
     int want;
-    int got;
+    int got_read;
+    int got_write;
+    char copy_buf[BUFSIZE];
+
+    /* get data from the pipe about a particular single task
+       try and effectively deal with the PIPE not necessarily
+       being friendly nor helpful in the way it is providing 
+       us data -cjd 2000.0717 */
 
     want = BUFSIZE;
+
+    /* read in a chunk of data until there's none left to read
+       or we get an error. I think we are going to loop forever
+       here if get an EOF, but how are we going to get that? 
+       XXX */
     while (num) {
         if (num < BUFSIZE) want = num;
-        got = read(src, &buf, want);
-        if (got != want) _exit(1);
-        got = write(dest, &buf, want);
-        if (got != want) _exit(1);
-        num -= got;
+        got_read = read(src, &copy_buf, want);
+        if (got_read < 0) {
+            if (errno != EAGAIN) {
+                /* could print errors here but there's nowhere
+                   for them to go, we are already using STDERR
+                   -cjd */
+                _exit(1);
+            }
+        } else {
+            want = got_read; 
+            got_write = write(dest, &copy_buf, want);
+            if (got_write != want) {
+                /* could print errors here but there's nowhere
+                   for them to go, we are already using STDERR
+                   -cjd */
+                _exit(1);
+            }
+            num -= got_read;
+        }
     }
+
 }
 

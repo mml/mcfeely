@@ -22,10 +22,10 @@
 
 use strict;
 use McFeely::Internal;
+use McFeely::Log;
 use IO::File;
 
 require 'chdir.pl';
-require 'log.pl';
 
 # determine what we are running as
 # if we are mcfeely-qwatch we only want to produce info 

@@ -22,6 +22,8 @@
 
 use strict;
 use McFeely::Internal;
+use McFeely::Log;
+use McFeely::Const;
 use Fcntl;
 use IO::File;
 use IO::Handle;
@@ -55,15 +57,12 @@ $select->add($srr);
 $siw->autoflush(1);
 STDOUT->autoflush(1);
 
-require 'log.pl';
-require 'const.pl';
 require 'chdir.pl';
 require 'safe_to_exit.pl';
 require 'files.pl';
 require 'tasks.pl';
 require 'jobs.pl';
 require 'attempt_tasks.pl';
-require 'do_select.pl';
 require 'read_results.pl';
 
 chdir_top() or bail("Could not chdir: $!; exiting.");
@@ -97,5 +96,34 @@ sub reaper  {
         $Tasks_in_progress = 0;
         $Asked_to_exit = 1;
     }
+}
+
+
+# wait on the trigger and other filehandles
+sub do_select() {
+    # $select is global in mcfeely-manage's name space
+
+    my $trigger = new IO::File;
+    my @hits;
+    my $buf;
+
+    # open the trigger without blocking
+    $trigger->open('trigger', O_RDONLY|O_NONBLOCK)
+        or plog "Cannot open trigger: $!";
+
+    # wait for activity
+    $select->add($trigger);
+    @hits = $select->can_read(SLEEPYTIME()) ;
+
+    # read from the trigger so that the select knows we are 
+    # paying attention
+    foreach (@hits) {
+        if ($_ == $trigger) {
+            $trigger->read($buf, 1);
+        }
+    }
+
+    $select->remove($trigger);
+    close($trigger);
 }
 

@@ -4,14 +4,12 @@ Makefile
 Metatask.pm
 Task.pm
 attempt_tasks.pl
-const.pl
 copy_bytes.c
 copy_bytes.h
 copy_fd.c
 copy_fd.h
 copy_to_null.c
 copy_to_null.h
-do_select.pl
 exit-codes.h
 files.pl
 fn.c
@@ -19,7 +17,6 @@ fn.h
 hostport.c
 hostport.h
 jobs.pl
-log.pl
 make-mcfeely-pm.c
 mcfeely-manage
 mcfeely-qread
@@ -58,3 +55,5 @@ secretmaker.c
 test_comm
 hostcheck.pl
 serverslam.pl
+Log.pm
+Const.pm
