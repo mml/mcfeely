@@ -22,6 +22,7 @@ void hard(char *m, int l) { write(1, m, l); exit(100); }
 void soft_write(void) { soft("write failure", 13); }
 void soft_read(void)  { soft("read failure",  12); }
 
+/* given a taskid as a string, open the file on fd */
 int task_open(taskid)
 char *taskid;
 {
