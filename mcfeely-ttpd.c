@@ -182,8 +182,8 @@ main(void)
             close(tube[0]);
             dup2(tube[1], 1);
             execv(args[0], args);
-            F("program not found", 17);
-            break;
+            write(1, "program not found", 17);
+            _exit(EXIT_HARD);
     }
 
     close(tube[1]);
