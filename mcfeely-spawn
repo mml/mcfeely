@@ -10,7 +10,6 @@ $| = 1;
 chdir '/home/mliggett/mcfeely-test' or bail("cannot chdir: $!");
 
 &init;
-warn "herro!\n";
 &doit(\&launch_ttpc, \&pack_result);
 
 sub soft { print STDOUT "@_\n"; exit 99 }
