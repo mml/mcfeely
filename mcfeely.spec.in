@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.7 1999/07/30 14:20:49 mliggett Exp $
+# $Id: mcfeely.spec.in,v 1.8 1999/07/30 14:31:19 mliggett Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
-# You may contact the author at <mml@pobox.com>.
+# You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
 Summary: asynchronous task execution on multiple hosts
 Name: mcfeely

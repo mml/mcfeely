@@ -15,7 +15,7 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
-** You may contact the author at <mml@pobox.com>.
+** You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 */
 
 #include <sys/stat.h>
