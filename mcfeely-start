@@ -29,9 +29,9 @@ require 'log.pl';
 
 &chdir_top or &bail("Could not chdir: $!");
 
-pipe SIR, SIW || die "can't pipe SIR, SIW: $!\n";
-pipe SRR, SRW || die "can't pipe SRR, SRW: $!\n";
-fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK) || 
+pipe SIR, SIW;
+pipe SRR, SRW;
+fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK ) || 
 	die "can't fcntl SRR: $!\n";
 
 my $pid = fork;
@@ -42,7 +42,11 @@ if (!defined $pid) {
     open STDIN, '<&SIR';
     open STDOUT, '>&SRW';
     exec 'bin/mcfeely-spawn';
+
 }
+
+fcntl(SRR, F_SETFD, 0);
+fcntl(SIW, F_SETFD, 0);
 
 close SIR; close SRW;
 exec 'bin/mcfeely-manage', fileno SRR, fileno SIW;
