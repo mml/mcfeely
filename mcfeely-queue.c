@@ -115,4 +115,5 @@ main(void)
     close(2);
     write_job();
     pull_trigger();
+    _exit(0);
 }
