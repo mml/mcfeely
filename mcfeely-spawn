@@ -56,6 +56,7 @@ my $select;
 
 # a buffer for data from mcfeely-manage
 my $Manage_read_buffer;
+my $Tasks_done = 0;
 
 # hashes for holding information about our children
 my %Tasknum;       # the tasknumber
@@ -158,7 +159,7 @@ while (1) {
     }
 
 
-    # make sure this is an empty lis
+    # make sure this is an empty list
     # we'll be looping on it in moments.
     @lines = ();
 
@@ -166,16 +167,26 @@ while (1) {
     # that this is a shorter faster loop than the way it was done
     # before
     if (length($stage) != 0) {
-        my $task_input_counter = 0;
-        while (length($stage) != 0 &&
-                $task_input_counter++ < $Tasks_per_select) {
-            last if ($stage !~ /\n/);
-            $stage =~ s/^.*\n//;
-            push(@lines, $&);
+        # if we a getting data from the pipe and we were
+        # busy last time let's not go this time
+        unless (scalar @ready_to_read > 0 &&
+                $Tasks_done == $Tasks_per_select) {
+        
+            my $task_input_counter = 0;
+            while (length($stage) != 0 &&
+                    $task_input_counter++ < $Tasks_per_select) {
+                last if ($stage !~ /\n/);
+                $stage =~ s/^.*\n//;
+                push(@lines, $&);
+            }
+        } else {
+            print STDERR "mcfeely-spawn: skipping injection, we are busy\n"
+                if $opt{'d'};
         }
-    }
+    } 
     # add any leftover $stage to the $Manager_read_buffer
     $Manage_read_buffer = $stage;
+    $Tasks_done         = scalar @lines;
 
     # do stuff with the lines
     foreach $line (@lines) {
