@@ -30,10 +30,6 @@ sub do_select() {
     $trigger->open('trigger', O_RDONLY|O_NONBLOCK)
         or plog "Cannot open trigger: $!";
 
-    # once it is open, make it block
-    # or maybe not
-    # $trigger->blocking(1);
-
     # wait for activity
     $select->add($trigger);
     @hits = $select->can_read(SLEEPYTIME()) ;

@@ -28,8 +28,13 @@ use IO::Handle;
 use IO::Select;
 use IO::Dir;
 
+
+$SIG{CHLD} = \&reaper;
+
 use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job
-             $rout $rin $srr $siw $select);
+             $rout $rin $srr $siw $select $Srr_readbuffer);
+
+$Srr_readbuffer = '';
 
 $select = new IO::Select;
 
@@ -39,19 +44,18 @@ my $out = shift;
 $srr = new IO::Handle;
 $siw = new IO::Handle;
 
+# our pipes to mcfeely-spawn
 $srr->fdopen($in, "r")  or die "open SRR (fd $in) failed: $!\n";
 $siw->fdopen($out, "w") or die "open SIW (fd $out) failed: $!\n";
 
-# testing setting the blocking in start only
-#$srr->blocking(0);
 $select->add($srr);
 
 $siw->autoflush(1);
 STDOUT->autoflush(1);
 
+require 'log.pl';
 require 'const.pl';
 require 'chdir.pl';
-require 'log.pl';
 require 'safe_to_exit.pl';
 require 'files.pl';
 require 'tasks.pl';
@@ -76,4 +80,15 @@ until ($Asked_to_exit && safe_to_exit() ) {
 
 plog("exiting");
 
-
+# we've lost the spawner, that's not supposed to 
+# happen
+# XXX: if this happens mcfeely is going to quite and supervise
+# XXX: we'll start it back up again. we don't want that. 
+# XXX: perhaps just run without supervise? or supervise -o
+sub reaper  {
+    plog("mcfeely-spawn has died for unknown reasons");
+    plog("queue status unreliable");
+    plog("Tasks in progress: $Tasks_in_progress");
+    $Tasks_in_progress = 0;
+    $Asked_to_exit = 1;
+}

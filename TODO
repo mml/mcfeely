@@ -1,8 +1,4 @@
 
-o if for some reason the mcfeely-spawn end of the pipe goes awry, the
-  mcfeely-manage side acts like there is a lot of data on that end
-  and keeps reading from the pipe, but getting no data (of course)
-  (2000.0623)
 o in many place files are opened and if there is an error it is not
   trapped in any particular fashion (2000.0623)
 o create a collection of docs that get installed with the rpm so

@@ -31,6 +31,8 @@ require 'log.pl';
 
 chdir_top() or bail("Could not chdir: $!");
 
+# set up the pipes on which mcfeely-manage and mcfeely-spawn
+# will communicate
 my $sir = new IO::Handle;
 my $siw = new IO::Handle;
 my $srr = new IO::Handle;
@@ -38,15 +40,18 @@ my $srw = new IO::Handle;
 my $pipe1 = new IO::Pipe($sir, $siw);
 my $pipe2 = new IO::Pipe($srr, $srw);
 
+# explicit set all these things to non-blocking
+# this is probably redundant
 $srr->blocking(0);
 $siw->blocking(0);
 $srw->blocking(0);
 $sir->blocking(0);
 
-my $pid = fork;
+my $pid = fork();
 if (!defined $pid) {
     die "cannot fork: $!\n";
 } elsif ($pid == 0) {
+    # child...
     $siw->close();
     $srr->close();
     $sir->fcntl(F_SETFD, 0);
@@ -54,6 +59,8 @@ if (!defined $pid) {
     exec 'bin/mcfeely-spawn', $sir->fileno(), $srw->fileno();
 
 }
+
+# parent...
 
 $srr->fcntl(F_SETFD, 0);
 $siw->fcntl(F_SETFD, 0);

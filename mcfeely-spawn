@@ -26,6 +26,7 @@ use McFeely::Internal;
 use POSIX;
 use IO::Select;
 use IO::Handle;
+use IO::Pipe;
 use Fcntl;
 use Symbol;
 
@@ -49,6 +50,9 @@ my %Slot;
 my %Stat;
 my %Msg;
 
+# the pipe on which we write to our children
+my $write_pipe;
+
 $| = 1;
 
 # change directories to the top of the mcfeely tree so we 
@@ -62,22 +66,37 @@ $SIG{CHLD} = \&reaper;
 # the subroutine in which we read the information and fork 
 # out the mcfeely-ttpc
 doit(\&launch_ttpc, \&pack_result);
-soft(0, "doit returned! impossible!!!");
-
+hard(0, "doit returned! $!");
 # we're done
 exit;
 
-sub soft { 
+#### begin the subs, all the real action happens below
+
+sub soft {
     my $slot   = shift;
     my $status = 99;
+    
+    hardsoft_error $slot, $status, @_;
+}
+
+sub hard {
+    my $slot   = shift;
+    my $status = 100;
+    
+    hardsoft_error($slot, $status, @_);
+}
+
+sub hardsoft_error { 
+    my $slot   = shift;
+    my $status = shift;
     my $msg    = join('', @_);
 
     # Tack an end-of-transmission at the end of msg.
-    $msg .= "\n";
+    $msg .= "\0";
     $msg .= pack 'c', 0x4;
 
     $srw->print("$slot\0$status\0$msg");
-    exit 99;
+    exit $status;
 }
 
 # fork off mcfeely-ttpc
@@ -86,14 +105,18 @@ sub launch_ttpc {
     chomp $ino;
     my $pid;
 
-    if (!defined ($pid = fork)) {
+    if (!defined ( $pid = fork() )) {
         # There was an error.
         return($ino, undef);
     } elsif ($pid == 0) {
         # I am the child.
         open STDIN, "queue/task/$ino"
             or soft $ino, "trouble opening queue/task/$ino: $!";
-        open(STDOUT, '>&main::WP')
+        #open(STDOUT, ">&main::WP')
+        # getting this next bit to work for some reason 
+        # requires the fileno, not the handle don't know why
+        my $write_pipe_no = $write_pipe->fileno();
+        open(STDOUT, ">& $write_pipe_no")
             or soft $ino, "trouble duping STDOUT: $!";
         close STDERR;
         #open(STDERR, '>&main::WP')
@@ -105,7 +128,8 @@ sub launch_ttpc {
     } else {
         # I am the parent.
         # close WP, my child is going to write on it not me.
-        close main::WP;
+        #close main::WP;
+        $write_pipe->close();
         return($ino, $pid);
     }
 }
@@ -114,6 +138,9 @@ sub launch_ttpc {
 sub pack_result {
     my %args = @_;
 
+    # tack a \0 on the end of message so we can have multi
+    # line reports
+    $args{msg} .= "\0";
     # Tack an end-of-transmission at the end of msg.
     $args{msg} .= pack 'c', 0x4;
 
@@ -128,7 +155,6 @@ sub doit {
     # reads the results from the child
     my $pack_sub = shift;
 
-    my $fh;
     my $buf;
     my $line;
     my $ok;
@@ -136,8 +162,6 @@ sub doit {
     my $oldsigset;
     my $sig_chld_set;
     my $slot;
-    my $stage;
-    my @lines;
     my @ready_to_read;
 
     $srw->autoflush(1);
@@ -152,14 +176,16 @@ sub doit {
 
     # loop
     while (1) {
+        my $stage;
+        my @lines;
+        # may need to do some tricks with blocking here
+
         # wait for some data or a signal
-        # experiment with setting blocking in start only
-        #$sir->blocking(1);
+        $sir->blocking(1);
         @ready_to_read = $select->can_read(10); #XXX
 
         # read instructions
-        # experiment with setting blocking in start only
-        #$sir->blocking(0);
+        $sir->blocking(0);
         $stage .= $buf
             while (defined($ok = sysread $sir, $buf, 1024)
                 and $ok > 0);
@@ -172,9 +198,18 @@ sub doit {
 
         # follow instructions
         while ($line = shift @lines) {
-            pipe(($fh = &gensym), main::WP);
+
+            # create the pipe that we will talk to kids with
+            my $read_pipe  = new IO::Handle;
+            $write_pipe = new IO::Handle;
+            my $pipe1   = new IO::Pipe($read_pipe, $write_pipe);
+
+            # keep track of children
             sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
+
+            # and call the fork_sub
             ($slot, $pid) = &$fork_sub($line);
+
             # if $pid is undef then for some reason we could
             # not fork and if that's the case we need to let
             # the other know that badness is afoot and they
@@ -182,8 +217,13 @@ sub doit {
             if (!defined($pid)) {
                 soft $slot, "unable to fork: $!";
             }
+
+            # save away the informatin about the task based
+            # used the pid as the key
             $Slot{$pid} = $slot;
-            $Fh{$pid} = $fh;
+            $Fh{$pid} = $read_pipe;
+
+            # continue keeping hold of children
             sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);
         }
 
@@ -203,14 +243,34 @@ sub doit {
 sub reaper {
     my $baby;
     my $fh;
+    my $read_count;
 
     while (($baby = waitpid(-1, &WNOHANG)) > 0) {
+        my $buf;
         $fh = $Fh{$baby}; # XXX: Oi!
         $Stat{$baby} = ($? >> 8);
-        fcntl($fh, F_SETFL, fcntl($fh, F_GETFL, 0)|O_NONBLOCK);
-        $Msg{$baby} = <$fh>;
-        close $fh;
-        delete $Fh{$baby};
+        $fh->blocking(1);
+        $read_count = $fh->read($buf, 1024);
+        if (!defined($read_count)) {
+            delete $Fh{$baby};
+            $fh->close();
+            hard($baby, "bad read from ttpc: $!");
+        } elsif ($read_count == 0) {
+            delete $Fh{$baby};
+            $fh->close();
+            hard($baby, "EOF on read from ttpc");
+        } else {
+            $Msg{$baby} = "$buf";
+            delete $Fh{$baby};
+            $fh->close();
+        }
     }
 }
 
+sub END {
+    open OUT, ">/tmp/mcfeely-spawn.$$";
+    print OUT "I've died\n";
+    print OUT "my latest bang: $!\n";
+    close OUT;
+}
+    

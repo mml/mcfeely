@@ -199,33 +199,59 @@ sub read_results() {
     my $line;
     my $old_sep;
     my $read_count;
-    my ($num, $code, $msg);
 
-    #### XXXX big experiment
-    # we are only taking one line in this, and there could potentially be
-    # tons more info on the pipe, we want to gather it, and then process
-    # however this isn't going to work because some of the
-    # time our line is going to have 0x4 in it because it is packed
-    # binary data. well for fuck's sake, that's just rich!
-    # need a way to fix this so we can do this mass reading because
-    # helps, alot, i think
-    # GAH!
-    my $old_sep = $/;
-    $/ = pack 'c', 0x4;
-    plog "heading for the while loop for reading srr ####################";
-    while(defined($line = <$srr>)) {
+    my $stage;
+    my $buf;
+    my $ok;
+    my @lines;
+
+    # read all the data from the pipe
+    $stage .= $buf while
+        (defined($ok = $srr->read($buf, 1024)) and $ok > 0);
+
+    # add any saved data from the last read to the front of the
+    # data
+    $stage = $Srr_readbuffer . $stage;
+
+    # turn the incoming data into a list of lines
+    (@lines) = split(pack('c', 0x4), $stage);
+
+    # we don't want to do anything if we have no data
+    return if (scalar(@lines) == 0);
+
+    # if the data is incomplete on the last line, we need to save it
+    # for the next read
+    if ($lines[$#lines] !~ /\0$/) {
+        $Srr_readbuffer = pop(@lines);
+    } else {
+    # otherwise clear out that buffer
+        $Srr_readbuffer = '';
+    }
+
+    # process each line
+    foreach $line (@lines) {
+        my ($num, $code, $msg);
         chomp($line);
-        next unless length $line;
         ($num, $code, $msg) = split('\0', $line);
+
+        # this is a hack! if we get 0 as the task identifier
+        # that means we are having some kind of bad error from
+        # mcfeely-spawn
         if ($num == 0) {
-            die "$msg:#$line#";
+            die "Got an error from mcfeely-spawn: $msg";
         }
-        plog "got $num, $code, $msg";
+
         my $task = task_lookup $num;
-        --$Tasks_in_progress;
         next unless defined $task;
         next unless defined $code;
 
+        --$Tasks_in_progress;
+
+        # take the \0 off the end of msg, it was a handy little
+        # marker but we need it no more
+        $msg =~ s/\0$//;
+
+        # proces the task
         if ($code == $TASK_SUCCESS_CODE) {
             my $job = $task->[$TASK_JOB];
 
@@ -259,7 +285,6 @@ sub read_results() {
         }
     }
         
-    $/ = $old_sep;
 }
 
 1;
