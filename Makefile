@@ -18,6 +18,9 @@ CFLAGS	= -g -Wall
 
 all: $(TARGETS)
 
+test:
+	perl -cw mcfeely-manage
+
 mcfeely-queue: mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	copy_bytes.o safe_read.o safe_write.o
 
