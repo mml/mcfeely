@@ -25,7 +25,7 @@ SOURCES	= attempt_tasks.pl do_select.pl files.pl jobs.pl log.pl \
 	  mcfeely-manage mcfeely-queue.c mcfeely.h \
 	  read_results.pl safe_to_exit.pl tasks.pl hostport.c hostport.h \
 	  mcfeely-ttpc.c exit-codes.h make-mcfeely-pm.c make-chdir-pl.c \
-	  make-internal-pm.c
+	  make-internal-pm.c snooze.c
 
 OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	  copy_bytes.o safe_read.o safe_write.o mcfeely-ttpc.o hostport.o \
@@ -33,7 +33,7 @@ OBJECTS = mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	  topdir.o
 
 TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
-	  McFeely.pm topdir mcfeely.h chdir.pl Internal.pm
+	  McFeely.pm topdir mcfeely.h chdir.pl Internal.pm snooze
 
 ROOTUSER = $(shell cat ROOTUSER)
 MCUSER   = $(shell cat MCUSER)
@@ -85,7 +85,7 @@ install: all PERLDIR
 	install -o $(MCUSER) -g $(QGROUP) -m 4510 mcfeely-queue `./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn mcfeely-ttpc \
-	  mcfeely-ttpd; do \
+	  mcfeely-ttpd snooze; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 $$i `./topdir`/bin ;\
 	done
 
@@ -118,7 +118,7 @@ rpminstall: all PERLDIR
 	install -m 4510 mcfeely-queue $(ROOT)/`./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
-	  mcfeely-ttpc mcfeely-ttpd; do \
+	  mcfeely-ttpc mcfeely-ttpd snooze; do \
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
 

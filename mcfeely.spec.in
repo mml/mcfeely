@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.8 1999/07/30 14:31:19 mliggett Exp $
+# $Id: mcfeely.spec.in,v 1.9 1999/07/30 19:53:14 mliggett Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -81,6 +81,7 @@ make ROOT="$RPM_BUILD_ROOT" rpminstall
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-manage
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-spawn
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/control/secrets
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
