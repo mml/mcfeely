@@ -1,0 +1,5 @@
+o post-tape-recovery queue fixer
+o make sure we're really writing to file every time we think we are
+o firewall stuff
+o need a mcfeely-kiva rpm (completely separate from this repository)
+  that we can slap on top?
