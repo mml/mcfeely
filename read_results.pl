@@ -189,8 +189,15 @@ sub task_flag_done($) {
 sub read_results() {
     my $line;
 
-    chomp($line = <SRR>);
-    ($num, $code, $msg) = unpack 'LcA*', $line;
+    # Some of the packed data might resemble a newline (ascii 10) so
+    # we have to count the bytes.
+    read SRR, $line, $TASK_NUM_LENGTH;
+    $num = unpack 'L', $line;
+    read SRR, $line, $TASK_CODE_LENGTH;
+    $code = unpack 'c', $line;
+    # Now we can treat the rest as text.
+    chomp($msg = <SRR>);    
+
     $task = task_lookup $num;
     --$Tasks_in_progress;
 

@@ -37,6 +37,9 @@ $TASK_SUCCESS_CODE = 0;
 $TASK_DEFERRAL_CODE = 99;
 $TASK_FAILURE_CODE = 100;
 
+$TASK_NUM_LENGTH = length pack 'L', 0;
+$TASK_CODE_LENGTH = length pack 'c', ' ';
+
 sub SLEEPYTIME() { 60 }
 
 1;
