@@ -1,3 +1,14 @@
+sub report($@) {
+    my $job = shift;
+
+    open REP, ">> rep/$job" or do {
+        plog "could not open rep/$job: $!";
+        return;
+    };
+    print REP @_, "\n";
+    close REP;
+}
+
 sub mail_report($$) {
     my $job = shift;
     my $success = shift;
@@ -106,7 +117,7 @@ sub read_results() {
     my $line;
 
     chomp($line = <SRR>);
-    ($num, $code, $msg) = unpack 'LcA', $line;
+    ($num, $code, $msg) = unpack 'LcA*', $line;
     $task = task_lookup $num;
     --$Tasks_in_progress;
 
