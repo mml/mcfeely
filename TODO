@@ -7,3 +7,5 @@ o improve report readibility (some changes made, but there's room for
   more)
 o abstract the mailing in mail_report so it is not dependendent on
   /bin/mail but instead uses something like Mail::Send or whatever
+o in mcfeely-ttpd.c a write is made to the the pipe when 'program not
+  found'. It doesn't say what program. It should.

@@ -70,24 +70,29 @@ sub mail_report($$) {
     # add the desc to the subject
     $subject .= ":  $desc";
 
-    # get our mailer XXX
-    # this should be abstracted out to a mail function so we
-    # don't have to rely on /bin/mail
-    open MAIL, "| mail -s '$subject' $whom";
+    # okay, if we've got somebody to send some mail to
+    # let's put it in a pipe
+    if ($whom) {
 
-    # get the report text
-    open REP, "rep/$job" or do {
-        plog "Could not open rep/$job: $!";
-        return;
-    };
+        # get our mailer XXX
+        # this should be abstracted out to a mail function so we
+        # don't have to rely on /bin/mail
+        open MAIL, "| mail -s '$subject' $whom";
 
-    # print the message
-    print MAIL "job $job report:\n";
-    print MAIL <REP>;
-    print MAIL "\nDescription:\n$desc";
+        # get the report text
+        open REP, "rep/$job" or do {
+            plog "Could not open rep/$job: $!";
+            return;
+        };
 
-    close REP;
-    close MAIL;
+        # print the message
+        print MAIL "job $job report:\n";
+        print MAIL <REP>;
+        print MAIL "\nDescription:\n$desc";
+
+        close REP;
+        close MAIL;
+    }
 }
 
 # mail reports, log completion, delete the job files and the task files and
