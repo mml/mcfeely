@@ -140,6 +140,9 @@ sub enqueue {
     my $pipe2;
     my $code;
 
+    # XXX: we probably shouldn't distort the object so much
+    $self->_flatten;
+
     if (! $self->_is_completable) {
         $self->_set_errstr('dependency error');
         return undef;
@@ -185,6 +188,65 @@ sub enqueue {
         return undef;
     }
     return 1;
+}
+
+sub _flatten {
+    my $self = shift;
+    my $dep;
+    my $key;
+    my @vals;
+    my $val;
+    my $task;
+    my @tdeps;
+    my @ndeps;
+    my @nvals;
+    my @ntasks;
+
+    # 1. expand metatasks on the LHS of dependencies
+    foreach $dep (@{$self->{deps}}) {
+        ($key, @vals) = @$dep;
+        if (ref($key) eq 'McFeely::Metatask') {
+            foreach $task ($key->list_tasks) {
+                push @tdeps, [$task, @vals];
+            }
+        } else {
+            push @tdeps, $dep;
+        }
+    }
+
+    # 2. expand metatasks on the RHS of dependencies
+    foreach $dep (@tdeps) {
+        ($key, @vals) = @$dep;
+        @nvals = ();
+        foreach $val (@vals) {
+            if (ref($val) eq 'McFeely::Metatask') {
+                push @nvals, $val->list_tasks;
+            } else {
+                push @nvals, $val;
+            }
+        }
+        push @ndeps, [$key, @nvals];
+    }
+
+    $self->{deps} = [@ndeps];
+
+    # 3. explode tasks from task list
+    foreach $task ($self->list_tasks) {
+        if (ref($task) eq 'McFeely::Metatask') {
+            push @ntasks, $task->list_tasks;
+        } else {
+            push @ntasks, $task;
+        }
+    }
+
+    # 4. incorporate deps from metatasks
+    foreach $task ($self->list_tasks) {
+        if (ref($task) eq 'McFeely::Metatask') {
+            $self->add_dependencies(@{$task->{deps}});
+        }
+    }
+
+    $self->{tasks} = [@ntasks];
 }
 
 sub _is_completable {
@@ -250,7 +312,7 @@ sub _write_dependencies {
 
     foreach $dep (@{$self->{deps}}) {
         ($key, @vals) = @$dep;
-        $ndeps{$key} = @vals;
+        $ndeps{$key} += @vals;
         foreach $task (@vals) {
             push(@{$waiters{$task}}, $key);
         }
