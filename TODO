@@ -3,4 +3,7 @@ o make sure we're really writing to file every time we think we are
 o firewall stuff
 o need a mcfeely-kiva rpm (completely separate from this repository)
   that we can slap on top?
-o improve report readibility
+o improve report readibility (some changes made, but there's room for
+  more)
+o abstract the mailing in mail_report so it is not dependendent on
+  /bin/mail but instead uses something like Mail::Send or whatever

@@ -30,32 +30,55 @@ sub report($@) {
 
 sub mail_report($$) {
     my $job = shift;
-    my $success = shift;
+    my $failed = shift;
     my $whom;
+    my $subject;
 
-    open SNOT, "snot/$job" or do {
-        plog "Could not open snot/$job: $!";
-        return;
-    };
-    $whom = <SNOT>;
-    close SNOT;
-
-    if (! $success) {
+    # figure out if we are failing or succeeding and produce 
+    if (! $failed) {
+        # success
+        open SNOT, "snot/$job" or do {
+            plog "Could not open snot/$job: $!";
+            return;
+        };
+        $whom = <SNOT>;
+        close SNOT;
+        $subject = "job $job success";
+    } else {
+        # failure
         open FNOT, "fnot/$job" or do {
             plog "Could not open fnot/$job: $!";
             return;
         };
-        $whom .= ' '.<FNOT>;
+        $whom = <FNOT>;
+        $subject = "job $job failure";
         close FNOT;
     }
 
-    open MAIL, "| mail -s 'job $job' $whom";
+    # get our mailer XXX
+    # this should be abstracted out to a mail function so we
+    # don't have to rely on /bin/mail
+    open MAIL, "| mail -s '$subject' $whom";
+
+    # get the report text
     open REP, "rep/$job" or do {
         plog "Could not open rep/$job: $!";
         return;
     };
+
+    # get the desc text
+    open DESC, "desc/$job" or do {
+        plog "Could not open desc/$job: $!";
+        return;
+    };
+
+    # print the message
+    print MAIL <DESC>;
+    print MAIL "\n\n";
     print MAIL <REP>;
+
     close REP;
+    close DESC;
     close MAIL;
 }
 
