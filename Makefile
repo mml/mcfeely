@@ -45,8 +45,8 @@ EVERYTHING	= $(shell cat MANIFEST)
 DIST		= $(PROJECT)-$(VERSION)
 TARFILE		= $(DIST).tar.gz
 SPECFILE	= $(PROJECT).spec
-RPMFILE		= $(RPMDIR)/RPMS/i386/$(DIST)-1kiva.i386.rpm
-SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1kiva.src.rpm
+RPMFILE		= $(RPMDIR)/RPMS/i386/$(DIST)-1.i386.rpm
+SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva/RPMS/i386
 
 .PHONY: all install rpminstall dist rpm ftp clean
