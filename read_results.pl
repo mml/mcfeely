@@ -1,13 +1,43 @@
+sub mail_report($$) {
+    my $job = shift;
+    my $success = shift;
+    my $whom;
+
+    open SNOT, "snot/$job" or do {
+        plog "Could not open snot/$job: $!";
+        return;
+    };
+    $whom = <SNOT>;
+    close SNOT;
+
+    if (! $success) {
+        open FNOT, "fnot/$job" or do {
+            plog "Could not open fnot/$job: $!";
+            return;
+        };
+        $whom .= ' '.<FNOT>;
+        close FNOT;
+    }
+
+    open MAIL, "| mail -s 'job $job' $whom";
+    open REP, "rep/$job" or do {
+        plog "Could not open rep/$job: $!";
+        return;
+    };
+    print MAIL <REP>;
+    close REP;
+    close MAIL;
+}
+
 # mail reports, log completion, delete the job files and the task files and
 # remove all data structures
 sub finish_job($) {
     my $job = shift;
     my $tasknum;
 
-    mail_report 'fail' if $job->[$JOB_FAILED];
-    mail_report 'succ';
+    mail_report $job->[$JOB_INO], $job->[$JOB_FAILED];
 
-    open JOB, "job/$job" or plog "Could not open job/$job: $!";
+    open JOB, "job/$job->[$JOB_INO]" or plog "Could not open job/$job: $!";
     seek JOB, 1, 1;
     while (job_read_task(JOB, $tasknum)) {
         foreach (qw(task info)) {
@@ -107,3 +137,5 @@ sub read_results() {
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     }
 }
+
+1;
