@@ -34,12 +34,12 @@ sub scan_job($$) {
         return undef;
     };
     JOB: while (defined($file = files(JOBD))) {
-        plog "new job $file" if $log_new;
+        plog "$file new job" if $log_new;
         open DESC, "desc/$file" or do {
             plog "Could not open desc/$file: $!";
             next JOB;
         };
-        plog "info job $file: ", <DESC>;
+        plog "$file info: ", <DESC>;
         close DESC;
         $job = job_new_job $JOB_INO => $file;
         open JOB, "$dir/$file" or do {
