@@ -42,8 +42,7 @@ main(void)
             close(pipe2[0]);
             write(pipe0[1], "12:foo\0bar\0baz\0,13:bar\0baz\0quux\0,", 33);
             close(pipe0[1]);
-            /* XXX: my literals are broken here? */
-            write(pipe1[1], "\x010:,\x001:\x00,", 9);
+            write(pipe1[1], "\x01" "0:," "\x00" "1:" "\x00" ",", 9);
             close(pipe1[1]);
             write(pipe2[1], "Your mom.\0", 10);
             write(pipe2[1], "mliggett@kiva.net\0", 18);
