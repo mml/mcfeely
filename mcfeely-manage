@@ -21,7 +21,6 @@
 # You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
 
 use McFeely::Internal;
-use Select;
 use Fcntl;
 use IO::File;
 
@@ -30,9 +29,9 @@ use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job $rout $rin );
 my $in = shift;
 my $out = shift;
 
-open SRR, "<&=$in" or die "open SIR (fd $in): $!\n";
+open SRR, "<&=$in" or die "open SRR (fd $in): $!\n";
 $rout = $rin = '';
-FD_SET(SRR, $rin);
+fd_set(SRR, $rin);
 open SIW, ">&=$out" or die "open SIW (fd $out): $!\n";
 select SIW; $| = 1; select STDOUT; $| = 1;
 
@@ -62,3 +61,4 @@ until ($Asked_to_exit && safe_to_exit) {
 }
 
 plog("exiting");
+

@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vi:sw=4:ts=4:wm=0:ai:sm:et
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -28,9 +29,10 @@ require 'log.pl';
 
 &chdir_top or &bail("Could not chdir: $!");
 
-pipe SIR, SIW;
-pipe SRR, SRW;
-fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK);
+pipe SIR, SIW || die "can't pipe SIR, SIW: $!\n";
+pipe SRR, SRW || die "can't pipe SRR, SRW: $!\n";
+fcntl(SRR, F_SETFL, fcntl(SRR, F_GETFL, 0)|O_NONBLOCK) || 
+	die "can't fcntl SRR: $!\n";
 
 my $pid = fork;
 if (!defined $pid) {
