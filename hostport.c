@@ -1,4 +1,4 @@
-/* $Id: hostport.c,v 1.1 1999/06/10 10:27:07 mliggett Exp $
+/* $Id: hostport.c,v 1.2 1999/07/29 20:25:26 mliggett Exp $
 ** vi:ts=4:sw=4:sm:ai:
 */
 
@@ -8,9 +8,10 @@
 
 /* match "host host port" in the control/hosts file */
 int
-hostport(realhost, realport, matchme)
+hostport(realhost, realport, secretfile, matchme)
 char **realhost;
 int *realport;
+char **secretfile;
 char *matchme;
 {
 	FILE *file;
@@ -29,16 +30,25 @@ char *matchme;
 		if (strcmp(word, matchme) == 0) {
 			word = strtok(0, " \t");
 			if (! word) return 0;
-			*realhost = malloc(strlen(word));
+			*realhost = malloc(strlen(word)+1);
 			if (! *realhost) return 0;
 			strcpy(*realhost, word);
-			word = strtok(0, " \t\n");
+			word = strtok(0, " \t");
 			if (! word) {
 				free(*realhost);
 				*realhost = 0;
 				return 0;
 			}
 			*realport = atoi(word);
+            word = strtok(0, " \t\n");
+            if (! word) {
+                free(*realhost);
+                *realhost = 0;
+                return 0;
+            }
+            *secretfile = malloc(strlen(word)+1);
+            if (! *secretfile) return 0;
+            strcpy(*secretfile, word);
 			fclose(file);
 			return 1;
 		}
