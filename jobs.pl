@@ -60,6 +60,7 @@ sub scan_job($$) {
             $task{$tasknum} = $task;
         }
         close JOB;
+        rename "$dir/$file", "job/$file" if $log_new;
         foreach $task (keys %task) {
             for ($i = 0; $i <= $#{$task->[$TASK_WAITERS]}; ++$i) {
                 splice @{$task->[$TASK_WAITERS]}, $i, 1,
