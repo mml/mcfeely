@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use Fcntl;
 
 chdir '/home/mliggett/mcfeely-test';
 
@@ -19,4 +20,4 @@ if (!defined $pid) {
 }
 
 close SIR; close SRW;
-exec 'bin/mcfeely-manage';
+exec 'bin/mcfeely-manage', fileno SRR, fileno SIW;
