@@ -56,4 +56,9 @@ Matt Liggett, mml@pobox.com
 
 =cut
 
+package McFeely::Metatask;
+use McFeely;
+
+@ISA = qw( McFeely::Job McFeely::Task );
+
 1;
