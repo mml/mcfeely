@@ -36,6 +36,15 @@
 #include "safe_read.h"
 #include "safe_write.h"
 
+/* Relevant external variables. */
+/* File descriptor to the pid/ file */
+extern int pidfd;
+/* Stat struct of the pid/ file */
+extern struct stat pidst;
+/* Scratch file descriptor */
+extern int fnfd;
+
+
 void
 get_hcas(void)
 {
@@ -118,7 +127,7 @@ write_job(void)
     pidrename();
 }
 
-void
+int
 main(void)
 {
     umask(033);
@@ -135,5 +144,5 @@ main(void)
     close(2);
     write_job();
     pull_trigger();
-    _exit(0);
+    return 0;
 }

@@ -41,10 +41,12 @@ sub launch_ttpc {
 	my $pid;
 
 	if (!defined ($pid = fork)) {
+	        # There was an error.
 		return($ino, undef);
 	} elsif ($pid == 0) {
-        open STDIN, "queue/task/$ino"
-            or soft "trouble opening queue/task/$ino: $!";
+	        # I am the child.
+	        open STDIN, "queue/task/$ino"
+		        or soft "trouble opening queue/task/$ino: $!";
 		open(STDOUT, '>&main::WP')
 			or soft "trouble duping STDOUT: $!";
 		close STDERR;
@@ -52,6 +54,9 @@ sub launch_ttpc {
 		#	or soft "trouble duping STDERR: $!";
 		exec 'bin/mcfeely-ttpc', $ino or soft "Couldn't exec tcpclient: $!";
 	} else {
+	        # I am the parent.
+	        # close WP, my child is going to write on it not me.
+                close main::WP;
 		return($ino, $pid);
 	}
 }

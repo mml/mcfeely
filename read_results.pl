@@ -168,7 +168,8 @@ sub defunct_waiters($) {
             $task->[$TASK_DEFUNCT] = 1;
             --$job->[$JOB_NTASKS];
             report $job->[$JOB_INO],
-                "task $task->[$TASK_INO]: defuncted due to failure of dependent task";
+	        "task $task->[$TASK_INO] to $task->[$TASK_HOST]: ",
+	        "defuncted due to failure of dependent task";
         }
     } $_[0], -1;
 }
@@ -201,7 +202,8 @@ sub read_results() {
         plog "$job->[$JOB_INO]:$num success: $msg";
         task_flag_done $num;
         $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
-        report $job->[$JOB_INO], "task $num: success: $msg";
+        report $job->[$JOB_INO], "task $num to $task->[$TASK_HOST]: ",
+                                 "success: $msg";
         decrement_waiters $task;
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
@@ -219,7 +221,8 @@ sub read_results() {
         my $job = $task->[$TASK_JOB];
 
         plog "$job->[$JOB_INO]:$num failure: $msg";
-        report $job->[$JOB_INO], "task $num: failure: $msg";
+        report $job->[$JOB_INO], "task $num to $task->[$TASK_HOST]: ",
+                                 "failure: $msg";
         defunct_waiters $task;
         $job->[$JOB_FAILED] = 1;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);

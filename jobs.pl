@@ -81,6 +81,10 @@ sub scan_job($$) {
         }
         close JOB;
         rename "$dir/$file", "job/$file" if $log_new;
+
+	# For each task, $task->[$TASK_WAITERS] is a list of task
+	# numbers. Look up those numbers in %task and replace them
+	# with the actual task references.
         foreach $task (keys %task) {
             for ($i = 0; $i <= $#{$task->[$TASK_WAITERS]}; ++$i) {
                 splice @{$task->[$TASK_WAITERS]}, $i, 1,
