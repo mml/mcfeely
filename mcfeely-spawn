@@ -60,8 +60,9 @@ chdir_top() or bail("cannot chdir: $!");
 $SIG{CHLD} = \&reaper;
 
 # the subroutine in which we read the information and fork 
-# our the mcfeely-ttpc
+# out the mcfeely-ttpc
 doit(\&launch_ttpc, \&pack_result);
+soft(0, "doit returned! impossible!!!");
 
 # we're done
 exit;
@@ -152,11 +153,13 @@ sub doit {
     # loop
     while (1) {
         # wait for some data or a signal
-        $sir->blocking(1);
+        # experiment with setting blocking in start only
+        #$sir->blocking(1);
         @ready_to_read = $select->can_read(10); #XXX
 
         # read instructions
-        $sir->blocking(0);
+        # experiment with setting blocking in start only
+        #$sir->blocking(0);
         $stage .= $buf
             while (defined($ok = sysread $sir, $buf, 1024)
                 and $ok > 0);
@@ -172,6 +175,13 @@ sub doit {
             pipe(($fh = &gensym), main::WP);
             sigprocmask(&POSIX::SIG_BLOCK, $sig_chld_set, $oldsigset);
             ($slot, $pid) = &$fork_sub($line);
+            # if $pid is undef then for some reason we could
+            # not fork and if that's the case we need to let
+            # the other know that badness is afoot and they
+            # should try later
+            if (!defined($pid)) {
+                soft $slot, "unable to fork: $!";
+            }
             $Slot{$pid} = $slot;
             $Fh{$pid} = $fh;
             sigprocmask(&POSIX::SIG_UNBLOCK, $sig_chld_set, $oldsigset);

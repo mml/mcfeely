@@ -40,6 +40,8 @@ my $pipe2 = new IO::Pipe($srr, $srw);
 
 $srr->blocking(0);
 $siw->blocking(0);
+$srw->blocking(0);
+$sir->blocking(0);
 
 my $pid = fork;
 if (!defined $pid) {

@@ -42,7 +42,8 @@ $siw = new IO::Handle;
 $srr->fdopen($in, "r")  or die "open SRR (fd $in) failed: $!\n";
 $siw->fdopen($out, "w") or die "open SIW (fd $out) failed: $!\n";
 
-$srr->blocking(0);
+# testing setting the blocking in start only
+#$srr->blocking(0);
 $select->add($srr);
 
 $siw->autoflush(1);

@@ -198,59 +198,68 @@ sub task_flag_done($) {
 sub read_results() {
     my $line;
     my $old_sep;
+    my $read_count;
+    my ($num, $code, $msg);
 
-    # Some of the packed data might resemble an EOT (ascii 4) so
-    # we have to count the bytes.
-    $srr->read($line, $TASK_NUM_LENGTH);
-    $num = unpack 'L', $line;
-    $srr->read($line, $TASK_CODE_LENGTH);
-    $code = unpack 'c', $line;
-
-    # Now we can treat the rest normally. But we look for EOT instead
-    # of a newline.
-    # Preserve the seperator before we change it.
-    $old_sep = $/;
+    #### XXXX big experiment
+    # we are only taking one line in this, and there could potentially be
+    # tons more info on the pipe, we want to gather it, and then process
+    # however this isn't going to work because some of the
+    # time our line is going to have 0x4 in it because it is packed
+    # binary data. well for fuck's sake, that's just rich!
+    # need a way to fix this so we can do this mass reading because
+    # helps, alot, i think
+    # GAH!
+    my $old_sep = $/;
     $/ = pack 'c', 0x4;
-    #chomp($msg = <SRR>);    
-    chomp($msg = <$srr>);    
-    $/ = $old_sep;
+    plog "heading for the while loop for reading srr ####################";
+    while(defined($line = <$srr>)) {
+        chomp($line);
+        next unless length $line;
+        ($num, $code, $msg) = unpack('Lca*', $line);
+        if ($num == 0) {
+            die "$msg:#$line#";
+        }
+        plog "got $num, $code, $msg";
+        my $task = task_lookup $num;
+        --$Tasks_in_progress;
+        next unless defined $task;
+        next unless defined $code;
 
-    $task = task_lookup $num;
-    --$Tasks_in_progress;
+        if ($code == $TASK_SUCCESS_CODE) {
+            my $job = $task->[$TASK_JOB];
 
-    return unless defined $code;
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) success: $msg";
+            task_flag_done $num;
+            $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
+            report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+                                 "to $task->[$TASK_HOST]: success: $msg";
+            decrement_waiters $task;
+            $job->[$JOB_NTASKS]--;
+            finish_job $job if ($job->[$JOB_NTASKS] == 0);
+        } elsif ($code == $TASK_DEFERRAL_CODE) {
+            my $job = $task->[$TASK_JOB];
 
-    if ($code == $TASK_SUCCESS_CODE) {
-        my $job = $task->[$TASK_JOB];
+            plog "$job->[$JOB_INO]:$num deferral: $msg";
+            # exponential backoff stolen from djb
+            $task->[$TASK_NEXT_TRY] =
+                $task->[$TASK_BIRTH] +
+                  ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
+                   + 5) ** 2;
+            task_enqueue $task;
+        } elsif ($code == $TASK_FAILURE_CODE) {
+            my $job = $task->[$TASK_JOB];
 
-        plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) success: $msg";
-        task_flag_done $num;
-        $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
-        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
-	                         "to $task->[$TASK_HOST]: success: $msg";
-        decrement_waiters $task;
-        $job->[$JOB_NTASKS]--;
-        finish_job $job if ($job->[$JOB_NTASKS] == 0);
-    } elsif ($code == $TASK_DEFERRAL_CODE) {
-        my $job = $task->[$TASK_JOB];
-
-        plog "$job->[$JOB_INO]:$num deferral: $msg";
-        # exponential backoff stolen from djb
-        $task->[$TASK_NEXT_TRY] =
-            $task->[$TASK_BIRTH] +
-              ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
-               + 5) ** 2;
-        task_enqueue $task;
-    } elsif ($code == $TASK_FAILURE_CODE) {
-        my $job = $task->[$TASK_JOB];
-
-        plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: $msg";
-        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
-	                         "to $task->[$TASK_HOST]: failure: $msg";
-        defunct_waiters $task;
-        $job->[$JOB_FAILED] = 1;
-        finish_job $job if ($job->[$JOB_NTASKS] == 0);
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) failure: $msg";
+            report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+                                 "to $task->[$TASK_HOST]: failure: $msg";
+            defunct_waiters $task;
+            $job->[$JOB_FAILED] = 1;
+            finish_job $job if ($job->[$JOB_NTASKS] == 0);
+        }
     }
+        
+    $/ = $old_sep;
 }
 
 1;
