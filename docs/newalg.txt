@@ -1,0 +1,28 @@
+foreach $job in job { read and store taskcount }
+foreach $task in task { read and store depcount; insert into queue }
+
+until (asked_to_exit && safe_to_exit) {
+  open trigger NONBLOCK;
+  fcntl trigger NONBLOCK;
+
+  # look for new jobs
+  process_new_jobs;
+    foreach $job in njob { read and store taskcount; rename to job }
+    foreach $task in ntask { read and store depcount; rename to task; insert into queue }
+
+  # send ttpd instructions to spawner
+  delegate_tasks;
+    foreach $task in the queue ready to go {
+      submit_to_spawner($task);
+      remove_from_queue($task);
+    }
+
+  select on trigger;
+
+  # read results from spawner
+  read_results;
+
+  # report success/failure; cleanup for completed jobs
+  finish_jobs;
+  close trigger;
+}

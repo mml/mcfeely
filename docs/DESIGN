@@ -1,0 +1,40 @@
+    All of the McFeely classes have full internal knowledge of one
+    another.  They are not written as separate object models, but are
+    separate classes only for the convenience of the application
+    programmer.  They are separate interfaces to a single model.
+    Hence, McFeely::Job::enqueue knows that a McFeely::Task is just a
+    blessed ref to a list that contains host, comm, args.
+
+_is_completable:
+
+    The idea is, build a hash where the keys are each task with a
+    dependency and each value is a list of the tasks that that task
+    depends upon.  We loop over that hash, doing 2 things each time
+
+      1. delete any keys where the VALUE is an empty list
+      2. delete from each value list all tasks that do not exist in
+         the hash (have zero dependencies)
+
+    We break the loop when BOTH 1 & 2 are NOPs.  When that happens, we
+    return OKAY if the hash is empty, and FALSE if it's not.
+    Essentially, the algorithm just mimics the work that
+    mcfeely-manage would do.
+
+_flatten:
+
+    1. Go through the dependencies.  Wherever there is a metatask on
+       the LHS, replace that dependency with one dependency for each
+       member of the metatask.  The RHS stays the same.  The LHS is
+       each member task.
+
+    2. Wherever there is a metatask on the RHS, replace that
+       dependency with one dependency for each member of the metatask.
+       The LHS stays the same.  The RHS is each member task.
+
+    3. For each metatask in the task list, incorporate the member
+       tasks into our task list.
+
+    4. For each metatask in the task list, incorporate the deps into
+       our deps.  Then remove the metatask.
+
+    Keep this up until there are no metatasks in the task list.

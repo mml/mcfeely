@@ -1,0 +1,77 @@
+DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT
+
+Task Transfer Protocol v2 (TTP2)
+Matt Liggett <mliggett@kiva.net>
+19990610
+
+
+1. Introduction
+
+   TTP2 is the Task Transfer Protocol v2.  It is for the execution of
+   tasks (a command and some arguments) from one host on another.
+   Tasks are performed synchronously by the remote side and then task
+   results are reported.
+
+
+2. Protocol
+
+   A TTP2 client connects to a TTP2 server over TCP.  The TTP2 server
+   listens on port 757.
+
+   Protocol outline: the client sends an authentication package and
+   then one or more task packages.  After each package, the server
+   sends back a response.
+
+   The client begins by sending an authentication package.  The
+   specifics of authentication are implementation-dependent.  The
+   server closes the connection if authentication cannot be verified.
+
+   The client then sends one or more task packages, defined below.
+   The server may close the connection to indicate that it is
+   temporarily unable to execute tasks.  Once the server receives the
+   task package, it must attempt to execute the task and then indicate
+   one of: success, temporary failure or permanent failure to the
+   client.
+
+   The client closes the connection when it is finished.
+
+
+3. Authentication Package
+
+   The authentication package can be anything.  However, it must be
+   encapsulated as a netstring.
+
+
+4. Task Packages
+
+   A task package consists of a a 4-byte task identifier (in network
+   order), 4-byte UID (in network order), a 4-byte GID (in network
+   order) and a task specification.
+
+   The task specification is a netstring-encoded string of
+   null-terminated substrings.  The first substring is the command
+   name.  All remaining substrings are arguments.
+
+
+5. Responses
+
+   Once the package has been received by the server, it must attempt
+   to execute the task.  It then reports its results to the client.
+   Each response is a single byte followed by a netstring-encoded
+   message.  The single byte 'K' is used to indicate success; 'Z' is
+   used to indicate temporary failure; 'F' is used to indicate
+   permanent failure.  The message should be a human-readable comment
+   on the situation.
+
+
+6. Netstrings
+
+   See http://pobox.com/~djb/proto/netstrings.txt for a definition of
+   netstrings.
+
+
+7. Examples
+
+   To be written.
+
+DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT DRAFT

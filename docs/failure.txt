@@ -1,0 +1,20 @@
+read each job
+  read each task
+  create objects for each task that NEEDS_DONE
+  when a task FAILS, the whole job fails.  the results of the other
+  tasks in the job become immaterial.  there are 3 possibilities for
+  each of those tasks
+    1. the task is being attempted
+       in this case, nothing is done to the task.  when its attempt
+       finishes, it will see that the job has FAILED and it will
+       either
+       a. report its success
+       b. report its failure
+       c. report 'attempt aborted'
+       then it removes itself and anything waiting on it and
+       decrements JOB_NTASKS appropriately
+    2. the task has already succeeded or failed
+       nothing to do here
+    3. the task is in the queue, but it's time has not yet come
+       the task will be dequeued and everything which depends upon it
+       will also be removed

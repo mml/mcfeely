@@ -1,0 +1,173 @@
+lockuser+(renhmdir,renhmdir,renhmdir,setemail)+unlockuser
+
+  $lock   = new McFeely::Task 'lockuser' ...;
+  $rh1    = new McFeely::Task 'renhmdir' ...;
+  $rh2    = new McFeely::Task 'renhmdir' ...;
+  $rh3    = new McFeely::Task 'renhmdir' ...;
+  $bulk   = new McFeely::Metatask $rh1, $rh2, $rh3;
+  $unlock = new McFeely::Task 'unlockuser' ...;
+  $job    = new McFeely::Job $lock, $bulk, $unlock;
+  $job->add_dependencies(
+    $bulk->requires($lock),
+    $unlock->requires($bulk)
+  );
+  $job->inject or die;
+
+->requires returns nothing more than a list, but the syntax increases
+readability; $bulk->requires($lock) just returns [$bulk, $lock].
+
+add_dependencies
+  (1) checks to make sure $bulk is actually a member of $job
+  (2) checks to make sure $lock [...] are actually members of $job
+  (3) $n = 0; foreach ($lock [...]) { $n += $_->add_waiter($bulk) }
+  (4) $bulk->increment_ndeps($n)
+
+add_waiter adds a task to the waiters list of another task; it returns
+the actual number of REAL TASKS that added this task as a waiter
+
+increment_ndeps does what it says
+
+inject (should probably be called enqueue)
+  (1) write HCAs to 0
+      foreach $task ($self->members) { $task->hca_write(0) }
+  (2) write ndeps, waiters to 1
+      foreach $task ($self->members) { $task->deps_and_waiters_write(1) }
+  (3) write desc, fnot, snot to 2
+      write(2, desc, fnot, snot);
+
+task    ndeps   waiters
+LOCK    0       RH1,RH2,RH3,SE
+RH1     1       UNLOCK
+RH2     1       UNLOCK
+RH3     1       UNLOCK
+SE      1       UNLOCK
+UNLOCK  4
+ 
+lockuser+(a+b)+(c,d)+unlockuser
+
+  $lock = new McFeely::Task 'lockuser' ...;
+  $a = new McFeely::Task 'a' ...;
+  $b = new McFeely::Task 'b' ...;
+  $bulk1 = new McFeely::Metatask $a, $b;
+  $bulk1->dependency($b => $a);
+  $c = new McFeely::Task 'c' ...;
+  $d = new McFeely::Task 'd' ...;
+  $bulk2 = new McFeely::Metatask $c, $d;
+  $unlock = new McFeely::Task 'unlockuser' ...;
+  $job = new McFeely::Job $lock, $bulk1, $bulk2, $unlock;
+  $job->dependency($bulk1 => $lock);
+  $job->dependency($bulk2 => $bulk1);
+  $job->dependency($unlock => $bulk2);
+  $job->inject or die;
+
+task    ndeps   waiters
+LOCK    0       A,B
+A       1       B,C,D
+B       2       C,D
+C       2       UNLOCK
+D       2       UNLOCK
+UNLOCK  2
+
+What happens:
+
+The metatask provides the distributive property over its member task
+both in terms of ndeps and waiters.
+
+When we say $job->dependency($bulk1 => $lock), it means
+  add A to LOCK waiters
+  A.ndeps++
+  add B to LOCK waiters
+  B.ndeps++
+
+When we say $job->dependency($bulk2 => $bulk1), it means
+  1G
+
+algorithm
+
+  job J consists of tasks T, U, V and W
+  V depends on T and U
+  W depends on U
+  struct linked_list {
+    void *element;
+    linked_list *next;
+  } typedef linked_list;
+  struct task {
+    linked_list *waiting;
+    char *host;
+    int nargs;
+    char *args[];
+    int ndeps;
+    bool defunct;
+  } typedef task;
+  struct job {
+    int ntasks;
+    int ino;
+  }
+
+  T.waiting = (V);
+  T.ndeps   = 0;
+
+  U.waiting = (V, W);
+  U.ndeps   = 0;
+
+  V.waiting = ();
+  V.ndeps   = 2;
+
+  W.waiting = ();
+  W.ndeps   = 1;
+
+  start at the top of the queue (sorted by next retry time) {
+    last when this task's retry is in the future
+    next if task.ndeps > 0;
+    submit_to_spawner(task);
+    remove_from_queue(task);
+  }
+
+  # XXX: how/when do we free a task?  this is especially important if
+  # we must dequeue a task because something upon which it depends
+  # fails.  the other tasks that have that dequeued task in their
+  # waiting list need to not have invalid pointers when the time comes
+  # to ndeps-- them.  need to solve this one.
+  read each result from the spawner {
+    if success {
+      record success;
+      task.job.ndeps--;
+      foreach waiter { waiter.ndeps-- }
+      free the task
+    } elsif tempfail {
+      re-insert into queue
+    } elsif permfail {
+      record failure;
+      task.job.ndeps--;
+      foreach waiter {
+        record failure;
+        remove_from_queue(waiter);
+        waiter.ndeps--;
+        waiter.defunct = 1;
+      }
+    }
+
+current algorithm
+
+  until (asked_to_exit && safe_to_exit) {
+    open trigger NONBLOCK;
+    fcntl trigger NONBLOCK;
+
+    # break up tasks, make dirs, etc
+    preprocess;
+
+    # read the completion reports returned by trpd
+    receive_completions;
+
+    # report success/failure; cleanup for completed jobs
+    finish_jobs;
+
+    # send ttpd instructions to jobq-spawn
+    delegate_tasks;
+
+    select on trigger;
+
+    # read results from jobq-spawn
+    read_results;
+    close trigger;
+  }

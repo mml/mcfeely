@@ -1,0 +1,72 @@
+void
+scan_jobs(dir, log_new)
+char *dnam;
+char log_new;
+{
+    DIR *dir;
+    struct dirent *ent;
+
+    dir = opendir(dnam);
+    if (dir == 0) {
+        
+}
+
+foreach job in job {
+ open desc/ino and log "info job ..."
+ create a job struct and insert it into the hash
+ open job/ino and foreach task {
+  open info/taskino
+  load needs_to_be_done, ndeps, waiters, birth (ctime), taskinfo, [ref to job struct] into a struct
+  insert into hash
+  if it needs_to_be_done { enqueue it; increment the job struct's ntasks }
+ }
+}
+until (asked_to_exit and safe_to_exit) {
+ foreach job in newj {
+  log "new job ..."
+  open desc/ino and log "info job ..."
+  create a job struct and insert it into the hash
+  open newj/ino and foreach task {
+   open info/taskino
+   load needs_to_be_done, ndeps, waiters, birth (ctime), taskino, [ref to job struct] into a struct
+   insert into hash
+   if it needs_to_be_done { enqueue it; increment the job struct's ntasks }
+  }
+ }
+ foreach task in the queue whose time has come {
+  send request to spawner to attempt it (taskino from its struct)
+  remove it from the queue
+ }
+ foreach result {
+  if success {
+   log success
+   report success
+   decrement ndeps in each waiter (structs AND files)
+   decrement ntasks in job struct
+   turn off needs_to_be_done in struct AND file for this task
+  } elsif deferral {
+   log deferral
+   backoff next try
+   reinsert into the queue
+  } elsif failure {
+   log failure
+   report failure
+   foreach waiter {
+    log failure ("dependency failed")
+    report failure         "
+    turn off needs_to_be_done in struct AND file
+    decrement ntasks in job struct
+    do the same for my waiters
+   }
+   turn off needs_to_be_done in struct AND file for this task
+   decrement ntasks in job struct
+  } else {
+   mangled report
+  }
+ }
+}
+
+ Anytime we decrement ntasks in a job (this should happen in a sub), we
+ check to see if it's now 0.  If it is, we log that fact, mail the report,
+ unlink each task in task/ and info/ (using the file job/ as a guide), then
+ fnot/, snot/, rep/, desc/, and finally job/.

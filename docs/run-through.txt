@@ -1,0 +1,31 @@
+  T.waiting = (V);
+  T.ndeps   = 0;
+
+  U.waiting = (V, W);
+  U.ndeps   = 0;
+
+  V.waiting = ();
+  V.ndeps   = 2;
+
+  W.waiting = ();
+  W.ndeps   = 1;
+
+new job
+ T and U are attempted
+  T suc -> V.ndeps-- (1)
+           T.job.ntasks-- (3)
+  U suc -> V.ndeps-- (0)
+           W.ndeps-- (0)
+           U.job.ntasks-- (2)
+ V and W are attempted
+  V suc -> V.job.ntasks-- (1)
+  W suc -> W.job.ntasks-- (0)
+job finished (success)
+
+new job
+ T attempt
+  T fai -> V.active = 0
+ U attempt
+  U fai -> V.active = 0
+           W.active = 0
+job finished (failed)

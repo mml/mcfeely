@@ -1,0 +1,17 @@
+struct job {
+    char *fnam;
+    int ntasks;
+}
+
+struct task {
+    char needs_done;
+    char ndeps;
+    struct llist *waiters;
+    time_t birth;
+    struct job *job;
+}
+
+struct linked_list {
+    void *datum;
+    linked_list *next;
+}

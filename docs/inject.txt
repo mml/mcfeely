@@ -1,0 +1,11 @@
+
+# A+B+(C,D,E)+F
+
+$j = new McFeely::Job 'a job';
+$a = new McFeely::Task ...; # (also B..F)
+$group = new McFeely::Metatask $c, $d, $e;
+$j->add_tasks $a, $b, $group, $f;
+$j->add_dependency $f, $group;
+$j->add_dependency $group, $b;
+$j->add_dependency $b, $a;
+$j->inject;

@@ -1,0 +1,24 @@
+group Q for people who can queue jobs
+uid R is root
+uid M for mcfeely
+gid M for mcfeely
+
+permission U G file                     runs as
+
+drwxr-xr-x R M /opt/mcfeely
+drwxr-xr-x R M  bin
+-r-s--x--- M Q   mcfeely-queue          M ?
+-r-xr-x--- R M   mcfeely-manage         M M
+-r-xr-x--- R M   mcfeely-spawn          M M
+-r-xr-x--- R M   mcfeely-ttpc           M M
+-r-xr-x--- R M   mcfeely-ttpd           R M
+drwxr-x--- M M  queue
+drwxr-x--- M M   pid
+drwxr-x--- M M   task
+drwxr-x--- M M   info
+drwxr-x--- M M   desc
+drwxr-x--- M M   newj
+drwxr-x--- M M   job
+drwxr-x--- M M   fnot
+drwxr-x--- M M   snot
+drwxr-x--- M M   rep

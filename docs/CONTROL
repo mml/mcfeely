@@ -1,0 +1,2 @@
+secrets/IP_NUMBER  mcfeely-ttpc    secret we want to send to the other side
+mysecret           mcfeely-ttpd   secret we expect to receive

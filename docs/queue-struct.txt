@@ -1,0 +1,50 @@
+pid  - prep area
+
+task - host, NULL, comm, NULL, [ arg, NULL, ... ], NULL
+newt - before they go to task
+info - ndeps (byte), job (4byte), waiting (4byte), waiting (4byte), ...
+
+job  - ntasks (byte), desc
+[[ maybe
+ job  - task (4byte), task (4byte), task (4byte), ...
+ desc - desc
+ ntasks would be determined by checking the defunct byte in each task in the
+ list; this way completing a task is an atomic operation (write 1 byte); we
+ could also then leave the job number out of info, since that data would be
+ available as we scan things here
+
+ but that means that all the tasks have to be in place before we can load the
+ job -- a little slow, but if we only examine the tasks based on what we know
+ the job contains, we will not waste any time checking and rechecking
+]]
+newj - before they go to job
+fnot - failure notify address
+snot - success notify address
+rep  - report
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+Injection:
+
+write ntasks and desc into pid/$$
+rename pid/$$ to newj/ino
+foreach task {
+ write task into pid/$$
+ rename pid/$$ to newt/ino
+ write info into pid/$$
+ rename pid/$$ to info/ino
+}
+pull trigger
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+mm:
+
+scan newt (and info) and rename to task
+scan newj and rename to job
+send inodes down the pipe to spawner
+read the results:
+  if K: fil.T->defunct, var.T->destroy, var.J--, {var,fil}.W--
+  if Z: requeue
+  if F: fil.T->defunct, var.T->destroy, var.J--, {var,fil}.W->defunct (and subseq var.J--)
+if J == 0 ( finish it; including all sorts variable destruction and file removing )

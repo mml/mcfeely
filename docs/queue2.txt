@@ -1,0 +1,27 @@
+pid  - prep area
+
+task - host, NULL, comm, NULL, [ arg, NULL, ... ]
+info - flag (byte), ndeps (byte), waiting (4byte), waiting (4byte), ...
+
+desc - desc
+newj - newly-queued jobs (see next line)
+job  - failed (byte), task (4byte), task (4byte), ...
+fnot - failure notify address
+snot - success notify address
+rep  - report
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+mcfeely-queue input streams
+
+0 bytes(4B) host NULL comm NULL arg NULL [ arg NULL ... ] ...
+1 ndeps(B) nwaiters(B) waiting(B) [ waiting(B) ... ] ...
+2 desc NULL fnot NULL snot NULL
+
+1. Read HCAs from 0, write to pid/$$, rename to task/ino, store ino[N] = ino
+2. Read data from 1, write to info/ino[N]
+3. Read desc from 2, write to pid/$$, rename to desc/ino
+4. read fnot from 2, write to fnot/ino
+5. read snot from 2, write to snot/ino
+6. write flag (0), then tasklist (4B...) into pid/$$; rename to newj/ino
+7. pull trigger
