@@ -8,6 +8,7 @@ main(void)
 {
     int pid;
     int st;
+    unsigned int nbytes;
 
     int pipe0[2];
     int pipe1[2];
@@ -40,9 +41,14 @@ main(void)
             close(pipe0[0]);
             close(pipe1[0]);
             close(pipe2[0]);
-            write(pipe0[1], "12:foo\0bar\0baz\0,13:bar\0baz\0quux\0,", 33);
+            nbytes = 12;
+            write(pipe0[1], &nbytes, sizeof(nbytes));
+            write(pipe0[1], "foo\0bar\0baz\0", 12);
+            nbytes = 13;
+            write(pipe0[1], &nbytes, sizeof(nbytes));
+            write(pipe0[1], "bar\0baz\0quux\0", 13);
             close(pipe0[1]);
-            write(pipe1[1], "\x01" "0:," "\x00" "1:" "\x00" ",", 9);
+            write(pipe1[1], "\x01" "\x00" "\x00" "\x01" "\x00", 5);
             close(pipe1[1]);
             write(pipe2[1], "Your mom.\0", 10);
             write(pipe2[1], "mliggett@kiva.net\0", 18);
