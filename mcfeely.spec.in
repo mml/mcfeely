@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.7 2000/07/27 23:32:09 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.8 2000/07/27 23:37:45 jeremy Exp $
 # vi:noet
 
 # mcfeely        Asynchronous remote task execution.
@@ -165,7 +165,6 @@ fi
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/hostcheck.pl
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/serverslam.pl
-%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/start-logger.pl
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/control/secrets
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid
