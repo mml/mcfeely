@@ -219,6 +219,7 @@ main(void)
         case 0:
             close(0);
             close(tube[0]);
+            dup2(tube[1], 2);
             dup2(tube[1], 1);
             execv(args[0], args);
             write(1, "program not found", 17);

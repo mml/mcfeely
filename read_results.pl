@@ -175,7 +175,8 @@ sub defunct_waiters($) {
             $task->[$TASK_DEFUNCT] = 1;
             --$job->[$JOB_NTASKS];
             report $job->[$JOB_INO],
-	        "task $task->[$TASK_INO] to $task->[$TASK_HOST]: ",
+	        "task $task->[$TASK_INO] ($task->[$TASK_COMM]) ",
+            "to $task->[$TASK_HOST]: ",
 	        "defuncted due to failure of dependent task";
         }
     } $_[0], -1;
