@@ -61,6 +61,7 @@ char *argv[];
     bzero(&sin, sizeof(sin));
 
     /* open secret file */
+    /* XXX: separate secrets */
     pfd = open("control/secret", O_RDONLY);
     if (pfd == -1) soft("cannot open control/secret", 26);
 
