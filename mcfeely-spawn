@@ -340,11 +340,17 @@ sub reaper {
             if (!defined($read_count)) {
                 # something went wrong during the read
                 $Msg{$baby} = "error reading from ttpc: $!";
+                # set the stat to a HARD error because we are not
+                # happy about this
+                $Stat{$baby} = 100;
                 delete $Pipehandle{$baby};
                 $fh->close();
             } elsif ($read_count == 0) {
                 # the other end is not there, this is unexpected
                 $Msg{$baby} = "unreadable error from ttpc";
+                # set the stat to a HARD error because we are not
+                # happy about this
+                $Stat{$baby} = 100;
                 delete $Pipehandle{$baby};
                 $fh->close();
             } else {
