@@ -83,7 +83,7 @@ install: all PERLDIR
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 $$i `./topdir`/bin ;\
 	done
 
-	ln -sf `./topdir`/bin/mcfeely-qread `./topdir`/bin/mcfeely-qwatch
+	cd $(ROOT)/`./topdir`/bin ;ln -sf mcfeely-qread mcfeely-qwatch
 
 	for i in '' /pid /task /info /desc /newj /job /fnot /snot /rep; do \
 		install -o $(MCUSER) -g $(MCGROUP) -m 0750 -d `./topdir`/queue$$i ;\
@@ -116,8 +116,7 @@ rpminstall: all PERLDIR
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
 
-	ln -sf $(ROOT)/`./topdir`/bin/mcfeely-qread \
-		$(ROOT)/`./topdir`/bin/mcfeely-qwatch
+	cd $(ROOT)/`./topdir`/bin ;ln -sf mcfeely-qread mcfeely-qwatch
 
 	for i in '' /pid /task /info /desc /newj /job /fnot /snot /rep; do \
 		install -m 0750 -d $(ROOT)/`./topdir`/queue$$i ;\
