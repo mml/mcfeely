@@ -65,7 +65,8 @@ sub task_new_task_from_file($) {
         plog "trouble: cannot open task/$ino: $!";
         return undef;
     };
-    ($task->[$TASK_HOST] = <TASK>) =~ s,\0.*,,g;
+    ($task->[$TASK_HOST], $task->[$TASK_COMM]) = 
+	( <TASK> =~ /^(.*?)\0(.*?)\0/ );
     close TASK;
 
     return $task;

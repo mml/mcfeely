@@ -217,8 +217,8 @@ sub read_results() {
         plog "$job->[$JOB_INO]:$num success: $msg";
         task_flag_done $num;
         $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
-        report $job->[$JOB_INO], "task $num to $task->[$TASK_HOST]: ",
-                                 "success: $msg";
+        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+	                         "to $task->[$TASK_HOST]: success: $msg";
         decrement_waiters $task;
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
@@ -236,8 +236,8 @@ sub read_results() {
         my $job = $task->[$TASK_JOB];
 
         plog "$job->[$JOB_INO]:$num failure: $msg";
-        report $job->[$JOB_INO], "task $num to $task->[$TASK_HOST]: ",
-                                 "failure: $msg";
+        report $job->[$JOB_INO], "task $num ($task->[$TASK_COMM]) ",
+	                         "to $task->[$TASK_HOST]: failure: $msg";
         defunct_waiters $task;
         $job->[$JOB_FAILED] = 1;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
