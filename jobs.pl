@@ -47,13 +47,16 @@ sub scan_job($$) {
             next JOB;
         };
         seek JOB, 1, 1; #XXX: does this belong abstracted?
-        while (job_read_task(JOB, $tasknum)) {
+        TASK: while (job_read_task(JOB, $tasknum)) {
             $task = task_new_task_from_file $tasknum;
+            next TASK unless defined $task;
             $task->[$TASK_JOB] = $job;
-            if ($task->[$TASK_NEEDS_DONE]) {
-                task_enqueue $task;
-                $job->[$JOB_NTASKS]++;
-            }
+
+            # if we got a task back, we can assume it NEEDS_DONE
+            # see also sub task_new_task_from_file
+            task_enqueue $task;
+            $job->[$JOB_NTASKS]++;
+
             $task{$tasknum} = $task;
         }
         close JOB;
