@@ -61,3 +61,5 @@ are each presented in order and terminated with a NULL byte.
 .B mcfeely-queue
 does not print diagnostics.  It exits 0 if it has successfully
 queued the job.  It exits 1 if it has failed.
+.SH BUGS
+Each task is limited to no more than 255 dependencies and 255 waiters.
