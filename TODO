@@ -1,7 +1,3 @@
-o if mcfeely-queue is sent >4096 bytes the pipe between
-  McFeely::Job and mcfeely-queue has a problem and a broken pipe
-  error happens. It's not immediately clear if this is a problem
-  in mcfeely-queue or in McFeely::Job::enqueue
 o mv the files in /opt/mcfeely/lib/perl into the mcfeely-server
   rpm since they are only used by mcfeely-server. this poses
   some weird directory conflict issues with mcfeely-common though.
