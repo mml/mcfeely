@@ -12,6 +12,8 @@ sub task_new_task(@) {
     return $task;
 }
 
+# return a new task IF APPROPRIATE
+# IOW, don't return one if it doesn't NEED_DONE
 sub task_new_task_from_file($) {
     my $ino = shift;
     my $data;
@@ -24,6 +26,10 @@ sub task_new_task_from_file($) {
     };
 
     read INFO, $task->[$TASK_NEEDS_DONE], 1;
+    if (! $task->[$TASK_NEEDS_DONE]) {
+        close INFO;
+        return undef;
+    }
     read INFO, $task->[$TASK_NDEPS], 1;
     while ((read INFO, $data, 4) == 4) {
         $data = unpack 'L', $data;
@@ -41,7 +47,7 @@ sub task_new_task_from_file($) {
 sub task_insert($) {
     my $task = shift;
 
-    $Task[$task->$TASK_INO] = $task;
+    $Task[$task->[$TASK_INO]] = $task;
 }
     
 # insert a task into a priority queue
@@ -56,3 +62,5 @@ sub task_enqueue($) {
     }
     push @Tasks, $task;
 }
+
+1;
