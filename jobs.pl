@@ -1,3 +1,12 @@
+sub job_read_task(*\$) {
+    my $fileref = shift;
+    my $numref = shift;
+
+    if ((read $$fileref, $$numref, 4) != 4) { return 0 }
+    $$numref = unpack('L', $$numref);
+    return 1;
+}
+
 # scan a job directory (either job or newj) for jobs
 sub scan_job($$) {
     my $dir = shift;
@@ -23,8 +32,7 @@ sub scan_job($$) {
             log "Could not open $dir/$file: $!\n";
             next JOB;
         };
-        seek JOB, 1, 1;
-        # XXX: need to finish this stuff
+        seek JOB, 1, 1; #XXX: does this belong abstracted?
         while (job_read_task(JOB, $tasknum)) {
             $task = McFeely::Task->new_from_file "info/$tasknum";
             $task->[$TASK_JOB] = $job;
