@@ -1,14 +1,14 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
-# $Id: hostcheck.pl,v 1.3 2000/06/02 21:57:43 cdent Exp $
+# $Id: hostcheck.pl,v 1.3.2.1 2000/06/20 15:56:56 cdent Exp $
 
 # mcfeely-task-test
 # inject a single task
 # demo code
 
 # adjust to locacation of McFeely.pm
-use lib '/home/cdent/src/mcfeely';
+use lib '/home/cdent/src/mcfeely.spawner';
 
 use McFeely;
 use strict;

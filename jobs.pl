@@ -52,7 +52,9 @@ sub scan_job($$) {
         plog "Could not open $dir: $!";
         return undef;
     };
-    GET_JOB: while (defined($file = files(JOBD))) {
+    # passing JOBD as a reference seems to work better here
+    # cjd 2000.0620
+    GET_JOB: while (defined($file = files(\*JOBD))) {
         plog "$file new job" if $log_new;
         open DESC, "desc/$file" or do {
             plog "Could not open desc/$file: $!";
