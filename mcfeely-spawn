@@ -76,7 +76,7 @@ sub soft {
     $msg .= "\n";
     $msg .= pack 'c', 0x4;
 
-    $srw->print(pack('Lca*', $slot, $status, $msg));
+    $srw->print("$slot\0$status\0$msg");
     exit 99;
 }
 
@@ -117,7 +117,7 @@ sub pack_result {
     # Tack an end-of-transmission at the end of msg.
     $args{msg} .= pack 'c', 0x4;
 
-    return(pack('Lca*', $args{slot}, $args{status}, $args{msg}));
+    return("$args{slot}\0$args{status}\0$args{msg}");
 }
 
 sub doit {

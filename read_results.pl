@@ -216,7 +216,7 @@ sub read_results() {
     while(defined($line = <$srr>)) {
         chomp($line);
         next unless length $line;
-        ($num, $code, $msg) = unpack('Lca*', $line);
+        ($num, $code, $msg) = split('\0', $line);
         if ($num == 0) {
             die "$msg:#$line#";
         }
