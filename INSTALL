@@ -1,3 +1,7 @@
+mcfeely is (C) 1999 Kiva Networking and is free software under the terms of
+the GNU Public License.  See the file COPYING for further details.
+
+
 Put the top-level directory for installation in TOPDIR.
 
 Put the user that owns certain dirs and files in ROOTUSER.
