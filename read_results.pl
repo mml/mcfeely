@@ -54,11 +54,11 @@ sub finish_job($) {
         foreach (qw(task info)) {
             unlink "$_/$tasknum" or plog "Could not unlink $_/$tasknum: $!";
         }
-        foreach (qw(fnot snot rep desc job)) {
-            unlink "$_/$job" or plog "Could not unlink $_/$job: $!";
-        }
     }
     close JOB;
+    foreach (qw(fnot snot rep desc job)) {
+        unlink "$_/$job->[$JOB_INO]" or plog "Could not unlink $_/$job->[$JOB_INO]: $!";
+    }
 
     plog "end job $job->[$JOB_INO]";
 
@@ -84,12 +84,12 @@ sub walk_waiters(&$$) {
         plog "Cannot open info/$ino: $!";
         return undef;
     };
-    $info->seek(5, 0) or do {
+    sysseek($info, 2, 0) or do {
         plog "Cannot seek info/$ino: $!";
         return undef;
     };
 
-    while ($info->read($waitino, 4) == 4) {
+    while ($info->sysread($waitino, 4) == 4) {
         $waitino = unpack 'L', $waitino;
         $waiter = task_lookup $waitino;
         walk_waiters($thunk, $waiter, $depth);
@@ -99,7 +99,7 @@ sub walk_waiters(&$$) {
 
 # Harmless side effect: completed tasks have NDEPS set to -1.
 # see walk_waiters for more details
-sub decrement_waiters($) { walk_waiters { $task->[$TASK_NDEPS]-- } $_[0], 1 }
+sub decrement_waiters($) { walk_waiters { shift->[$TASK_NDEPS]-- } $_[0], 1 }
 
 # Harmless side effect: failed tasks are marked DEFUNCT.
 # see walk_waiters for more details
@@ -110,6 +110,17 @@ sub defunct_waiters($) {
         $task->[$TASK_DEFUNCT] = 1;
         --$job->[$JOB_NDEPS];
     } $_[0], -1;
+}
+
+sub task_flag_done($) {
+    my $ino = shift;
+
+    open INFO, "+< info/$ino" or do {
+        plog "trouble: could not open info/$ino: $!";
+        return;
+    };
+    print INFO pack('c', 1);
+    close INFO;
 }
 
 # read the results from the spawner
@@ -124,13 +135,15 @@ sub read_results() {
     if ($code eq $TASK_SUCCESS_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "task $num: success: $msg";
+        plog "transfer task $num: success: $msg";
+        task_flag_done $num;
+        $task->[$TASK_NEEDS_DONE] = 0; # XXX: this is redundant, isn't it?
         report $job->[$JOB_INO], "task $num: success: $msg";
         decrement_waiters $task;
         $job->[$JOB_NTASKS]--;
         finish_job $job if ($job->[$JOB_NTASKS] == 0);
     } elsif ($code eq $TASK_DEFERRAL_CODE) {
-        plog "task $num: deferral: $msg";
+        plog "transfer task $num: deferral: $msg";
         # exponential backoff stolen from djb
         $task->[$TASK_NEXT_TRY] =
             $task->[$TASK_BIRTH] +
@@ -140,7 +153,7 @@ sub read_results() {
     } elsif ($code eq $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
 
-        plog "task $num: failure: $msg";
+        plog "transfer task $num: failure: $msg";
         report $job->[$JOB_INO], "task $num: failure: $msg";
         defunct_waiters $task;
         $job->[$JOB_FAILED] = 1;
