@@ -8,7 +8,6 @@
 
 #include "mcfeely-queue.h"
 #include "mcfeely.h"
-#include "netstring.h"
 #include "trigger.h"
 #include "fn.h"
 #include "pid.h"
@@ -20,13 +19,13 @@
 void
 get_hcas(void)
 {
-    int bytes;
+    unsigned int bytes;
+    char nargs;
 
-    while ((bytes = read_size(0)) > -1) {
+    while (read(0, &bytes, sizeof(bytes)) == sizeof(bytes)) {
         pidopen();
         pidstat();
         copy_bytes(bytes, 0, pidfd);
-        read_comma(0);
         close(pidfd);
         fnmake_int("task/", pidst.st_ino);
         pidrename();
@@ -39,26 +38,19 @@ void
 get_info(void)
 {
     int i;
-    int j;
-    int num;
+    char num;
 
     for (i = 0; i < ino_num; ++i) {
         fnmake_int("info/", ino[i]);
         fncreat();
-        /* write flag byte */
-        safe_write(fnfd, "", 1);
-        /* read ndeps byte */
-        safe_read(1, &buf, 1);
-        /* write ndeps byte */
-        safe_write(fnfd, &buf, 1);
-        num = read_size(1);
-        if (num == -1) _exit(1);
-        for (j = 0; j < num; ++j) {
+        safe_write(fnfd, "", 1);                      /* write flag byte */
+        safe_read(1, &buf, 1);                        /* read ndeps byte */
+        safe_write(fnfd, &buf, 1);                    /* write ndeps byte */
+        for (safe_read(1, &num, 1); num > 0; --num) { /* write waiters */
             safe_read(1, &buf, 1);
             if (buf[0] >= ino_num) _exit(1);
             safe_write(fnfd, &(ino[(int)buf[0]]), sizeof(ino_t));
         }
-        read_comma(1);
         close(fnfd);
     }
     close(1);
