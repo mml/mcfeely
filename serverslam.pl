@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vi:sw=4:ts=4:wm=0:ai:sm:et
 
-# $Id: serverslam.pl,v 1.1.2.1 2000/06/21 22:21:22 cdent Exp $
+# $Id: serverslam.pl,v 1.1.2.2 2000/06/24 06:59:35 cdent Exp $
 
 # A tool for beating the piss out of a mcfeely-server client combo
 # initially just does one one server and one client
@@ -21,7 +21,8 @@ my $host            = $ARGV[0];
 my $comm            = $ARGV[1];
 my $job_iterations  = $ARGV[2];
 my $task_iterations = $ARGV[3];
-my $mail            = $ARGV[4];
+my $fnot            = $ARGV[4];
+my $snot            = $ARGV[5];
 
 defined($job_iterations) or
     die "three args required: host, comm, job_iterations\n";
@@ -34,8 +35,8 @@ foreach $count (1 .. $job_iterations) {
     $job{$count} = new McFeely::Job;
 
     $job{$count}->desc("slamserver job $count");
-    $job{$count}->snot($mail);
-    $job{$count}->fnot($mail);
+    $job{$count}->snot($snot);
+    $job{$count}->fnot($fnot);
 
     my $taskcount;
     my %task;

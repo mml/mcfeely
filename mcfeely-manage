@@ -38,7 +38,8 @@ $Srr_readbuffer = '';
 
 $select = new IO::Select;
 
-my $in = shift;
+my $pid = shift;
+my $in  = shift;
 my $out = shift;
 
 $srr = new IO::Handle;
@@ -86,10 +87,10 @@ plog("exiting");
 # XXX: we'll start it back up again. we don't want that. 
 # XXX: perhaps just run without supervise? or supervise -o
 sub reaper  {
-    plog("mcfeely-spawn has died for unknown reasons");
-    wait();
-    plog("queue status unreliable");
-    plog("Tasks in progress: $Tasks_in_progress");
-    $Tasks_in_progress = 0;
-    $Asked_to_exit = 1;
+    if (wait() == $pid) {
+        plog("mcfeely-spawn has died for unknown reasons");
+        plog("queue status unreliable");
+        plog("Tasks in progress: $Tasks_in_progress");
+        $Tasks_in_progress = 0;
+        $Asked_to_exit = 1;
 }

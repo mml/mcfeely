@@ -67,4 +67,4 @@ $siw->fcntl(F_SETFD, 0);
 
 $sir->close();
 $srw->close();
-exec 'bin/mcfeely-manage', $srr->fileno(), $siw->fileno();
+exec 'bin/mcfeely-manage', $pid, $srr->fileno(), $siw->fileno();
