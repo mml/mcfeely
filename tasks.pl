@@ -37,9 +37,9 @@ sub task_new_task_from_file($) {
         $data = unpack 'L', $data;
         push @$waiters, $data;
     }
+    $task->[$TASK_BIRTH] = (stat INFO)[10];
     close INFO;
     $task->[$TASK_WAITERS] = $waiters;
-    $task->[$TASK_BIRTH] = (stat INFO)[10];
     $task->[$TASK_INO] = $ino;
 
     return $task;
