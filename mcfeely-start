@@ -68,3 +68,42 @@ $siw->fcntl(F_SETFD, 0);
 $sir->close();
 $srw->close();
 exec 'bin/mcfeely-manage', $pid, $srr->fileno(), $siw->fileno();
+
+__END__
+
+=head1 NAME
+
+mcfeely-start - start system for a McFeely server
+
+=head1 SYNOPSIS
+
+B<mcfeely-start>
+
+=head1 DESCRIPTION
+
+The B<mcfeely-start> program is used to start a mcfeely server.
+B<mcfeely-start> is responsible for changing directory to the base
+mcfeely directory, establishing two pipes, and exec'ing the
+B<mcfeely-manage> and B<mcfeely-spawn> programs, passing as arguments
+the file descriptors of the pipes that connect them. B<mcfeely-manage>
+also receives the pid of mcfeely-spawn (the child of mcfeely-manage).
+
+=head1 SEE ALSO
+
+L<mcfeely-manage>,
+L<mcfeely-spawn>
+
+=head1 COPYRIGHT
+
+This program is copyright 2000 Kiva Networking. It is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+Please see the file COPYING in the distribution.
+
+=head1 AUTHORS
+
+Matt Liggett E<lt>mml@pobox.comE<gt>, Chris Dent E<lt>cdent@systhug.comE<gt>,
+Adrian Hosey E<lt>ahosey@systhug.comE<gt>
+
+=cut

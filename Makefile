@@ -36,7 +36,9 @@ TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
 	McFeely.pm topdir mcfeely.h chdir.pl Internal.pm snooze \
 	secretmaker 
 
-HTML	 	= Metatask.html Job.html Task.html	
+HTML	 	= Metatask.html Job.html Task.html  \
+		      mcfeely-spawn.html mcfeely-start.html mcfeely-manage.html
+
 HOWTO		= HOWTO TODO
 
 ROOTUSER 	= $(shell cat ROOTUSER)
@@ -177,7 +179,7 @@ ftp: $(RPMFILE) $(SRPMFILE)
 	scp $(RPMFILE) $(FTPLOC)/RPMS/i386
 	scp $(SRPMFILE) $(FTPLOC)/SRPMS
 
-www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML) $(HOWTO)
+www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML) $(HOWTO) plhtml
 	chmod 644 $(RPMFILE) $(SRPMFILE) $(TARFILE) $(HTML) $(HOWTO)
 	scp $(RPMFILE) $(WWWLOC)/dist
 	scp $(SRPMFILE) $(WWWLOC)/dist
@@ -197,6 +199,8 @@ $(SPECFILE): $(SPECFILE).in version BLURB TOPDIR ROOTUSER MCUSER MCGROUP \
 
 test:
 	perl -cw mcfeely-manage
+	perl -cw mcfeely-start
+	perl -cw mcfeely-spawn
 
 mcfeely-queue: mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	copy_bytes.o safe_read.o safe_write.o
@@ -261,3 +265,8 @@ createtestdir: McFeely.pm Internal.pm chdir.pl
 
 .pm.html: Metatask.pm Job.pm Task.pm
 	pod2html $< > $*.html
+
+plhtml: mcfeely-manage mcfeely-spawn mcfeely-start
+	for i in $? ; do \
+	 pod2html $$i > $$i.html ;	\
+	done 	

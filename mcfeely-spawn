@@ -383,3 +383,67 @@ sub hardsoft_error {
     # only exit when we want to DIE
     return;
 }
+
+
+__END__
+
+=head1 NAME
+
+mcfeely-spawn - server side task execution tool for McFeely
+
+=head1 SYNOPSIS
+
+B<mcfeely-spawn> C<[-d]> C<[-T E<lt>numE<gt>]> C<E<lt>fd of in pipeE<gt>>
+C<E<lt>fd of out pipeE<gt>>
+
+=head1 DESCRIPTION
+
+The B<mcfeely-spawn> program is responsible for reading task numbers
+from B<mcfeely-manage>, executing B<mcfeely-ttpc> with the task number
+as an argument and STDIN as the task file, waiting for results back
+from mcfeely-ttpc and reporting the results to B<mcfeely-manage>.
+
+See the OVERVIEW document a detailed description of how tasks
+move through mcfeely-spawn.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-d>
+
+Turn on debugging. This will send additional information about the task
+numbers being processed. It will announce a task as it is received from 
+B<mcfeely-manage> and again when results are received from
+B<mcfeely-ttpc>.
+
+=item B<-T num>
+
+Adjust the "throttling" value. Defaults to 5. Limits the number of tasks 
+that mcfeely-spawn will launch per trip through the select the loop. This
+can help McFeely to avoid filehandle and process table resource starvation 
+when lots of tasks are injected at once.
+
+=back
+
+=head1 SEE ALSO
+
+L<mcfeely-start>,
+L<mcfeely-manage>,
+L<mcfeely-ttpc>,
+B<OVERVIEW>
+
+=head1 COPYRIGHT
+
+This program is copyright 2000 Kiva Networking. It is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+Please see the file COPYING in the distribution.
+
+=head1 AUTHORS
+
+Matt Liggett E<lt>mml@pobox.comE<gt>, Chris Dent E<lt>cdent@systhug.comE<gt>,
+Adrian Hosey E<lt>ahosey@systhug.comE<gt>
+
+=cut

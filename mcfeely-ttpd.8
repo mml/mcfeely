@@ -1,0 +1,55 @@
+''' mcfeely        Asynchronous remote task execution.
+''' Copyright (C) 1999 Kiva Networking
+'''
+''' This program is free software; you can redistribute it and/or
+''' modify it under the terms of the GNU General Public License
+''' as published by the Free Software Foundation; either version 2
+''' of the License, or (at your option) any later version.
+'''
+''' This program is distributed in the hope that it will be useful,
+''' but WITHOUT ANY WARRANTY; without even the implied warranty of
+''' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+''' GNU General Public License for more details.
+'''
+''' You should have received a copy of the GNU General Public License
+''' along with this program; if not, write to the Free Software
+''' Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+'''
+''' You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
+.TH mcfeely-ttpc 8
+.SH NAME
+mcfeely-ttpd \- execute a mcfeely task on a mcfeely client
+.SH SYNOPSIS
+.B mcfeely-ttpd
+.SH DESCRIPTION
+.B mcfeely-ttpd
+runs from inetd or similar tool, listening as a ttp2 service for
+connections from
+.B mcfeely-ttpc.
+Reads a secret from the network and if it matches reads a mcfeely
+task command line sent by
+.B mcfeely-ttpc.
+If the comm name does not contain any '/' characters 
+.B mcfeely-ttpd
+forks and execs the comm with the provided arguments. The parent
+waits for the exit status of the child. Based on the exit status
+the parent will send one of three possible one letter codes back
+to ttpc. 'K' if the comm was successful (for "OK"), 'F' if
+the comm had a permanent failure, or 'Z' to indicate deferral.
+'Z' can result if the comm had an unexpected exit code for some
+reason, or if the comm produced an EXIT_SOFT, a temporary
+failure. Any output produced by the comm is also sent back to
+.B mcfeely-ttpc.
+
+mcfeely-ttpd will log diagnostic output to the LOG_DAEMON
+facility of syslog.
+.SH "SEE ALSO"
+mcfeely-ttpc(8), mcfeely-spawn, syslogd(8)
+.SH "COPYRIGHT"
+This program is copyright 2000 Kiva Networking. It is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+Please see the file COPYING in the distribution.
+.SH "AUTHORS"
+Matt Liggett <mml@pobox.com>, Chris Dent <cdent@systhug.com>

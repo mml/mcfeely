@@ -1,0 +1,58 @@
+''' mcfeely        Asynchronous remote task execution.
+''' Copyright (C) 1999 Kiva Networking
+'''
+''' This program is free software; you can redistribute it and/or
+''' modify it under the terms of the GNU General Public License
+''' as published by the Free Software Foundation; either version 2
+''' of the License, or (at your option) any later version.
+'''
+''' This program is distributed in the hope that it will be useful,
+''' but WITHOUT ANY WARRANTY; without even the implied warranty of
+''' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+''' GNU General Public License for more details.
+'''
+''' You should have received a copy of the GNU General Public License
+''' along with this program; if not, write to the Free Software
+''' Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+'''
+''' You may contact the maintainer at <mcfeely-maintainer@systhug.com>.
+.TH mcfeely-ttpc 8
+.SH NAME
+mcfeely-ttpc \- transer a mcfeely task to a mcfeely client
+.SH SYNOPSIS
+.B mcfeely-ttpc tasknum
+.SH DESCRIPTION
+.B mcfeely-ttpc
+reads a McFeely task from stdin and makes a TTP2 connection to a
+.B mcfeely-ttpd
+process on the destination client. The first thing
+it reads is the hostname. It uses the mcfeely hosts file to find
+the "real host" and port number for connecting to the remote
+host. The TTP2 shared secret is read and passed to the
+.B mcfeely-ttpd.
+Without waiting to see if the secret is accepted
+(the remote end will just disregard us if it's not)
+.B mcfeely-ttpc
+sends down the task number, UID and GID (not currently used) and
+the task comm and arguments.
+
+.B mcfeely-ttpc
+then waits for results from 
+.B mcfeely-ttpd,
+gathering the exit code and any output execution of the comm may have
+produced. The output is sent to stdout and
+.B mcfeely-ttpc
+exits indicating success, failure or deferral.
+.B mcfeely-spawn
+picks up the output and the exit code in it's reaper routine.
+.SH "SEE ALSO"
+mcfeely-ttpd(8), mcfeely-spawn
+.SH "COPYRIGHT"
+This program is copyright 2000 Kiva Networking. It is free software;
+you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation;
+either version 2 of the License, or (at your option) any later version.
+Please see the file COPYING in the distribution.
+.SH "AUTHORS"
+Matt Liggett <mml@pobox.com>, Chris Dent <cdent@systhug.com>,
+Adrian Hosey <ahosey@systhug.com>
