@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.5 2000/07/20 21:07:18 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.6 2000/07/20 21:34:10 jeremy Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -154,6 +154,7 @@ fi
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/snooze
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/hostcheck.pl
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/serverslam.pl
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/start-logger.pl
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/control/secrets
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue
 %attr(- @MCUSER@   @MCGROUP@) %dir @TOPDIR@/queue/pid

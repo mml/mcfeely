@@ -65,3 +65,4 @@ docs/DESIGN
 docs/OVERVIEW
 docs/perl-interface.txt
 docs/ttp2.txt
+start-logger.pl
