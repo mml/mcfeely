@@ -1,4 +1,11 @@
 
+o mv the files in /opt/mcfeely/lib/perl into the mcfeely-server
+  rpm since they are only used by mcfeely-server. this poses
+  some weird directory conflict issues with mcfeely-common though.
+  (2000.0628)
+o in read_results when $msg is multiline the log output does not
+  have the jobid:tasknum (comm) line on it. this can be fixed by
+  turning $msg into an array and looping over it. (2000.0628)
 o in many place files are opened and if there is an error it is not
   trapped in any particular fashion (2000.0623)
 o create a collection of docs that get installed with the rpm so

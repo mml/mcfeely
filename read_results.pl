@@ -266,7 +266,7 @@ sub read_results() {
         } elsif ($code == $TASK_DEFERRAL_CODE) {
             my $job = $task->[$TASK_JOB];
 
-            plog "$job->[$JOB_INO]:$num deferral: $msg";
+            plog "$job->[$JOB_INO]:$num ($task->[$TASK_COMM]) deferral: $msg";
             # exponential backoff stolen from djb
             $task->[$TASK_NEXT_TRY] =
                 $task->[$TASK_BIRTH] +
