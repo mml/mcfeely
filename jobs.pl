@@ -7,6 +7,20 @@ sub job_read_task(*\$) {
     return 1;
 }
 
+sub job_new_job(@) {
+    my $key; 
+    my $val;
+    my $job = [];
+
+    while (@_) {
+        $key = shift;
+        $val = shift;
+        $job->[$key] = $val;
+    }
+
+    return $job;
+}
+
 # scan a job directory (either job or newj) for jobs
 sub scan_job($$) {
     my $dir = shift;
@@ -16,25 +30,25 @@ sub scan_job($$) {
     my $job;
 
     opendir JOBD, $dir or do {
-        log "Could not open $dir: $!";
+        plog "Could not open $dir: $!";
         return undef;
     };
     JOB: while (defined($file = files(JOBD))) {
-        log "new job $file" if $log_new;
+        plog "new job $file" if $log_new;
         open DESC, "desc/$file" or do {
-            log "Could not open desc/$file: $!";
+            plog "Could not open desc/$file: $!";
             next JOB;
         };
-        log "info job $file: ", <DESC>;
+        plog "info job $file: ", <DESC>;
         close DESC;
-        $job = McFeely::Job->new $JOB_INO => $file;
+        $job = job_new_job $JOB_INO => $file;
         open JOB, "$dir/$file" or do {
-            log "Could not open $dir/$file: $!\n";
+            plog "Could not open $dir/$file: $!\n";
             next JOB;
         };
         seek JOB, 1, 1; #XXX: does this belong abstracted?
         while (job_read_task(JOB, $tasknum)) {
-            $task = McFeely::Task->new_from_file "info/$tasknum";
+            $task = task_new_task_from_file $tasknum;
             $task->[$TASK_JOB] = $job;
             if ($task->[$TASK_NEEDS_DONE]) {
                 task_enqueue $task;
