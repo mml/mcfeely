@@ -3,6 +3,7 @@
 
 use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job );
 
+require 'const.pl';
 require 'log.pl';
 require 'safe_to_exit.pl';
 require 'files.pl';
