@@ -37,6 +37,7 @@ TARGETS	= mcfeely-queue test-queue mcfeely-ttpc mcfeely-ttpd make-mcfeely-pm \
 	secretmaker 
 
 HTML	 	= Metatask.html Job.html Task.html	
+HOWTO		= HOWTO
 
 ROOTUSER 	= $(shell cat ROOTUSER)
 MCUSER   	= $(shell cat MCUSER)
@@ -176,12 +177,13 @@ ftp: $(RPMFILE) $(SRPMFILE)
 	scp $(RPMFILE) $(FTPLOC)/RPMS/i386
 	scp $(SRPMFILE) $(FTPLOC)/SRPMS
 
-www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML)
+www: $(RPMFILE) $(TARFILE) $(SRPMFILE) $(HTML) $(HOWTO)
 	chmod 644 $(RPMFILE) $(SRPMFILE) $(TARFILE) $(HTML)
 	scp $(RPMFILE) $(WWWLOC)/dist
 	scp $(SRPMFILE) $(WWWLOC)/dist
 	scp $(TARFILE) $(WWWLOC)/dist
 	scp $(HTML) $(WWWLOC)
+	scp $(HOWTO) $(WWWLOC)
 
 update: ftp www
 

@@ -211,7 +211,7 @@ sub doit {
             $write_pipe = new IO::Handle;
             my $pipe1   = new IO::Pipe($read_pipe, $write_pipe);
             if (!defined($pipe1)) {
-                soft 0, "unable to creat pipe: $!";
+                soft 0, "unable to create pipe: $!";
             }
 
             # keep track of children

@@ -118,7 +118,7 @@ char *argv[];
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
     if (write(s, "\0\0\0\0", 4) != 4) soft_write();
 
-    /* this right here deserves a comment because althought
+    /* this right here deserves a comment because although
        it isn't immediately clear, this is the crux of the
        biscuit, this takes the entire contents of STDIN and
        writes it to the socket */
