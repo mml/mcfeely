@@ -1,0 +1,61 @@
+vi:sw=4:ts=4:ai:sm:et:wm=10
+
+Introduction
+
+The documentation for McFeely is a bit spread out and confusing. This
+document attempts to alleviate some of the confusion by providing a
+step by step guide to installing (from RPM) and then running a mcfeely
+server and client installation. 
+
+In its first draft this document will only describe the client and
+server on a local box without ssh being involved. Discussion about use
+with ssh will be added later.
+
+Installation
+
+To install you will need the following rpms:
+
+  mcfeely-client
+  mcfeely-server
+  mcfeely-common
+  knetstring
+
+You should be able to find all of these in the mcfeely distribution 
+directory at http://web.systhug.com/mcfeely/dist/
+
+knetstring provides the shared library used by the client and server
+to talk with one another. 
+
+Before you install the rpms, create the user and groups which McFeely
+needs to run.
+
+ALSO: because of some weirdness with installing perl modules from RPMS
+on different versions of Redhat you may find that you need to do the
+following to make the perl modules that McFeely will install visible
+to your system:
+
+   cd /usr/lib/perl5/site_perl
+   cp -a 5.005/* .
+   rm -r 5.005
+   ln -s . 5.005
+
+YOU MAKE THESE SORTS OF CHANGES AT YOUR OWN RISK. MAKE SURE YOU KNOW
+WHAT YOU ARE DOING!
+
+-  create a mcfeely user with a home of /opt/mcfeely and /bin/bash
+   as its shell
+-  create a mcfeely group, this is the group the server runs as
+-  create a mcqueue group. To this group add users who you wish to
+   allow to enqueue mcfeely jobs. You don't want to do this all
+   will nilly, think before you act. We suggest that you don't add
+   anyone to this group until after you have completed your testing
+   and are familiar with the system.
+
+The mcfeely server is a continuously running processes so should
+therefore start at boot time and run continuously from there. At this
+time no initscripts are provided. They are in the works. To start
+things run:
+
+   /opt/mcfeely/bin/mcfeely-start
+
+This program will log to STDERR so you may want to catch that.
