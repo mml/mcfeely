@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+# vi:ts=4:sw=4:sm:ai:et:
+
+use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job );
+
+require 'log.pl';
+require 'safe_to_exit.pl';
+require 'files.pl';
+require 'jobs.pl';
+require 'tasks.pl';
+require 'attempt_tasks.pl';
+require 'do_select.pl';
+require 'read_results.pl';
+
+chdir_top or bail "Could not chdir: ", McFeely->errmsg, "; exiting.";
+
+scan_job  'job', 0;
+scan_task 'task', 0;
+
+until ($Asked_to_exit && safe_to_exit) {
+    scan_job  'newj', 1;
+    scan_task 'newt', 1;
+    attempt_tasks;
+    do_select;
+    read_results;
+}

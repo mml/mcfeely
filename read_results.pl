@@ -1,0 +1,97 @@
+# mail reports, log completion, delete the job files and the task files and
+# remove all data structures
+sub finish_job($) {
+    my $job = shift;
+
+    mail_report 'fail' if $job->[$JOB_FAILED];
+    mail_report 'succ';
+
+    log "end job $job->[$JOB_INO]";
+
+    #XXX
+}
+
+# walk the tree of tasks waiting on this task and do something (contained
+# within $thunk) to each task
+sub walk_waiters(&$$) {
+    my $thunk = shift;
+    my $task = shift;
+    my $depth = shift;
+
+    my $ino = $task->[$TASK_INO];
+    my $info = IO::File->new;
+
+    &$thunk($task);
+
+    return if $depth == 0;
+
+    --$depth;
+
+    $info->open("info/$ino") or do {
+        log "Cannot open info/$ino: $!";
+        return undef;
+    };
+    $info->seek(5, 0) or do {
+        log "Cannot seek info/$ino: $!";
+        return undef;
+    };
+
+    while ($info->read($waitino, 4) == 4) {
+        $waitino = unpack 'L', $waitino;
+        $waiter = task_lookup $waitino;
+        walk_waiters($thunk, $waiter, $depth);
+    }
+    $info->close;
+}
+
+# Harmless side effect: completed tasks have NDEPS set to -1.
+# see walk_waiters for more details
+sub decrement_waiters($) { walk_waiters { $task->[$TASK_NDEPS]-- } $_[0], 1 }
+
+# Harmless side effect: failed tasks are marked DEFUNCT.
+# see walk_waiters for more details
+sub defunct_waiters($) {
+    my $job = $_[0]->[$TASK_JOB];
+
+    walk_waiters {
+        $task->[$TASK_DEFUNCT] = 1;
+        --$job->[$JOB_NDEPS];
+    } $_[0], -1;
+}
+
+# read the results from the spawner
+sub read_results() {
+    my $line;
+
+    chomp($line = <SRR>);
+    ($num, $code, $msg) = unpack 'LcA', $line;
+    $task = task_lookup $num;
+    --$Tasks_in_progress;
+
+    if ($code eq $TASK_SUCCESS_CODE) {
+        my $job = $task->[$TASK_JOB];
+
+        log "task $num: success: $msg";
+        report $job->[$JOB_INO], "task $num: success: $msg";
+        decrement_waiters $task;
+        $job->[$JOB_NTASKS]--;
+        finish_job $job if ($job->[$JOB_NTASKS] == 0);
+    } elsif ($code eq $TASK_DEFERRAL_CODE) {
+        log "task $num: deferral: $msg";
+        # exponential backoff stolen from djb
+        $task->[$TASK_NEXT_TRY] =
+            ( $task->[$TASK_BIRTH] +
+              (($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
+               + 20) ** 2;
+        task_enqueue $task;
+    } elsif ($code eq $TASK_FAILURE_CODE) {
+        my $job = $task->[$TASK_JOB];
+
+        log "task $num: failure: $msg";
+        report $job->[$JOB_INO], "task $num: failure: $msg";
+        defunct_waiters $task;
+        $job->[$JOB_FAILED] = 1;
+        $job->[$JOB_NTASKS]--;
+        finish_job $job if ($job->[$JOB_NTASKS] == 0);
+    }
+}

@@ -1,0 +1,80 @@
+#!/usr/bin/perl
+
+# XXX remove me
+sub chdir_top { chdir "/home/mliggett/mcfeely-test" }
+
+# XXX remove me
+sub bail { die @_, "\n" }
+
+#require 'files.pl';
+
+# usage: files(DIRHANDLE)
+# returns files like readdir, but it skips . and ..
+sub files(*) {
+    my $glob = shift;
+
+    return(grep { !/^\.\.?$/ } readdir $$glob) if wantarray;
+    while ($_ = readdir $$glob) { return $_ unless /^\.\.?$/ }
+    return undef;
+}
+
+1;
+#---
+
+chdir_top or bail "Could not chdir: ", McFeely->errmsg, "; exiting.";
+chdir "queue" or bail "Could not chdir queue: $!";
+
+sub do_task($) {
+    my $num = shift;
+    my @waiters;
+
+    open TASK, "task/$num" or die "task/$num: $!\n";
+    $file = join '', <TASK>;
+    close TASK;
+    my @file = split /\0/, $file;
+    open INFO, "info/$num" or die "info/$num: $!\n";
+    read(INFO, $flag, 1);
+    $flag = unpack('C', $flag);
+    $flag = $flag ? 'd' : 'a';
+    read(INFO, $ndeps, 1);
+    $ndeps = unpack('C', $ndeps);
+    while (read(INFO, $waiter, 4) == 4) {
+        $waiter = unpack('L', $waiter);
+        push @waiters, $waiter;
+    }
+    close INFO;
+    print " task $num ($flag$ndeps): @file\n";
+    print "          waiters: @waiters\n";
+}
+
+sub scan_jobs($) {
+    my $dir = shift;
+
+    opendir JOBD, $dir or die "$dir: $!\n";
+
+    JOB: while (defined($file = files(JOBD))) {
+        open JOB, "$dir/$file" or die "$dir/$file: $!\n";
+        $ctime = (stat JOB)[10];
+        $ctime = localtime $ctime;
+        read(JOB, $failed, 1);
+        $failed = unpack('C', $failed);
+        open DESC, "desc/$file" or die "desc/$file: $!\n";
+        $desc = join '', <DESC>;
+        close DESC;
+        open SNOT, "snot/$file" or die "snot/$file: $!\n";
+        $snot = join '', <SNOT>;
+        close SNOT;
+        open FNOT, "fnot/$file" or die "fnot/$file: $!\n";
+        $fnot = join '', <FNOT>;
+        close FNOT;
+        print "#$file ", ($failed ? '(failed) ' : ''), "$ctime\n",
+              "        $desc  $fnot  $snot\n";
+        while (read(JOB, $task, 4) == 4) {
+            $task = unpack('L', $task);
+            do_task $task
+        }
+    }
+}
+
+scan_jobs 'newj';
+scan_jobs 'job';
