@@ -170,6 +170,8 @@ www: $(RPMFILE) $(TARFILE) $(SRPMFILE)
 	scp $(SRPMFILE) $(WWWLOC)/dist
 	scp $(TARFILE) $(WWWLOC)/dist
 
+update: ftp www
+
 
 $(SPECFILE): $(SPECFILE).in version BLURB TOPDIR ROOTUSER MCUSER MCGROUP \
 	QGROUP PERLDIR
@@ -236,3 +238,8 @@ clean:
 
 print:
 	nenscript -1R $(SOURCES)
+
+createtestdir: McFeely.pm
+	-mkdir McFeely
+	cd McFeely && ln -sf ../Job.pm && ln -sf ../Task.pm && \
+		ln -sf ../Metatask.pm

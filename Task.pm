@@ -49,6 +49,14 @@ McFeely tasks.
 
 Creates a C<McFeely::Task>.
 
+New validates the HOST and COMMAND. The host is checked to see
+that the string is there and if it is drives it back to a fully
+qualified domain name. COMMAND is checked to be sure that the
+string exists and has content. If either HOST or COMMAND are not
+proper then new() will die. If you call new in an eval you can
+trap the dies and process $@. $@ will begin with 'hostname:' if
+the hostname is no good; 'comm:' if the COMMAND is no good.
+
 =item comm
 
 Return the name of the comm for this task. This does not assert
@@ -85,29 +93,83 @@ L<McFeely::Metatask>
 
 =head1 AUTHORS
 
-Matt Liggett <mml@pobox.com>, Adrian Hosey <ahosey@systhug.com>
+Matt Liggett <mml@pobox.com>, Adrian Hosey <ahosey@systhug.com>,
+Chris Dent <cdent@kiva.net>
 
 =cut
 
+use lib '/home/cdent/src/mcfeely.hostcheck';
 package McFeely::Task;
 use McFeely;
 use strict;
 use vars qw(@ISA @EXPORT_OK %EXPORT_TAGS);
+
+use constant HOST => 0;
+use constant COMM => 1;
 
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw ( EXIT_HARD EXIT_SOFT EXIT_OK hard soft ok plog );
 %EXPORT_TAGS = ( all => \@EXPORT_OK );
 
+# comm exit codes used with hard(), soft(), and ok()
 sub EXIT_HARD() { 100 }
 sub EXIT_SOFT() {  99 }
 sub EXIT_OK()   {   0 }
 
+# create the object and return a reference to the
+# the list that makes up the task
 sub new {
     my $class = shift;
+    my $self  = [ @_ ] ;
+    bless $self, $class;
 
-    return(bless [@_], $class);
+    # validate the input
+    $self->_process_host();
+    $self->_process_comm();
+
+    return $self;
+
 }
+
+# _process_comm
+# private method to make sure that a comm has been provided
+# mostly a stub at this point
+# <cdent@kiva.net>
+sub _process_comm {
+    my $self = shift;
+
+    # make sure the comm is provided
+    if ($self->[COMM] !~ /\w+/ || !defined($self->[COMM])) {
+        die "comm: no comm provided\n";
+    }
+}
+
+
+# _process_host
+# private method to take the provide hostname and turn it
+# into a fully qualified hostname. so hostnames are driven
+# back to FQDN
+# <cdent@kiva.net>
+sub _process_host {
+    my $self = shift;
+    my $hostname;
+
+    # make sure the hostname is provided
+    if ($self->[HOST] !~ /\w+/ || !defined($self->[HOST])) {
+        die "hostname: no hostname provided\n";
+    }
+
+    # make sure the hostname can resolve
+    unless ( $hostname = (gethostbyname($self->[HOST]))[0] ) {
+        die "hostname: unable to resolve hostname $self->[HOST]\n";
+    }
+    $self->[HOST] = $hostname;
+}
+
+
+
+
 
 # Return the name of the comm in this task.
 sub comm { return @{$_}[1] }
