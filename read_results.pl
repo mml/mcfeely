@@ -148,7 +148,7 @@ sub read_results() {
         $task->[$TASK_NEXT_TRY] =
             $task->[$TASK_BIRTH] +
               ((($task->[$TASK_NEXT_TRY] - $task->[$TASK_BIRTH]) ** 0.5)
-               + 20) ** 2;
+               + 5) ** 2;
         task_enqueue $task;
     } elsif ($code eq $TASK_FAILURE_CODE) {
         my $job = $task->[$TASK_JOB];
