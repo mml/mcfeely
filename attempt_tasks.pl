@@ -25,6 +25,7 @@ sub attempt_tasks() {
         }
 
         next if $task->[$TASK_NDEPS] > 0;
+        plog "attempt task $task->[$TASK_INO] job $task->[$TASK_JOB]->[$JOB_INO]";
         write_to_spawner $task->[$TASK_INO];
         $task->[$TASK_NEXT_TRY] = $now;
         ++$Tasks_in_progress;
