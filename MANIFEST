@@ -54,3 +54,4 @@ QGROUP
 make-chdir-pl.c
 make-internal-pm.c
 snooze.c
+secretmaker.c
