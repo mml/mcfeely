@@ -1,10 +1,3 @@
-# insert a job into a hash table
-sub job_insert($) {
-    my $job = shift;
-
-    $Job{$job->[$JOB_INO]} = $job;
-}
-
 # scan a job directory (either job or newj) for jobs
 sub scan_job($$) {
     my $dir = shift;
@@ -18,19 +11,38 @@ sub scan_job($$) {
         return undef;
     };
     JOB: while (defined($file = files(JOBD))) {
+        log "new job $file" if $log_new;
+        open DESC, "desc/$file" or do {
+            log "Could not open desc/$file: $!";
+            next JOB;
+        };
+        log "info job $file: ", <DESC>;
+        close DESC;
+        $job = McFeely::Job->new $JOB_INO => $file;
         open JOB, "$dir/$file" or do {
             log "Could not open $dir/$file: $!\n";
             next JOB;
         };
-        $job = McFeely::Job->new $JOB_INO => $file;
-        read(JOB, $job->[$JOB_NTASKS], 1) or do {
-            log "Could not read from job/$file: $!\n";
-            next JOB;
-        };
-        job_insert $job;
-        log "new job $file" if $log_new;
-        log "info job $file: ", <JOB>;
+        seek JOB, 1, 1;
+        # XXX: need to finish this stuff
+        while (job_read_task(JOB, $tasknum)) {
+            $task = McFeely::Task->new_from_file "info/$tasknum";
+            $task->[$TASK_JOB] = $job;
+            if ($task->[$TASK_NEEDS_DONE]) {
+                task_enqueue $task;
+                $job->[$JOB_NTASKS]++;
+            }
+            $task{$tasknum} = $task;
+        }
         close JOB;
+        foreach $task (keys %task) {
+            for ($i = 0; $i <= $#{$task->[$TASK_WAITERS]}; ++$i) {
+                splice @{$task->[$TASK_WAITERS]}, $i, 1,
+                       $task{$task->[$TASK_WAITERS]->[$i]};
+            }
+        }
     }
     return 1;
 }
+
+1;
