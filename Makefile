@@ -69,7 +69,8 @@ RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm \
 SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva
 WWWLOC		= www.systhug.com:~systhug/www/mcfeely
-DOCDIR		= $(ROOT)/docs
+SUBDIRS		= docs
+SOURCEDIR   = $(shell pwd)
 
 .PHONY: all install rpminstall dist rpm ftp clean
 .INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
@@ -152,20 +153,17 @@ rpminstall: all PERLDIR
 		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
 	done
 
-	install -d $(DOCDIR)
-
-	for i in COPYING HOWTO INSTALL MANIFEST README docs/DESIGN \
-		docs/OVERVIEW docs/perl-interface.txt docs/ttp2.txt ; do \
-        install -m 0644 $$i $(DOCDIR) ; \
-	done
-
 dist: $(TARFILE)
 
 $(TARFILE): $(EVERYTHING)
 	rm -fr $(DIST)
 	rm -f $(TARFILE)
 	mkdir $(DIST)
-	perl -ne 'chomp; symlink "../$$_", "$(DIST)/$$_" or die $$!' MANIFEST
+	for subdir in $(SUBDIRS); do \
+		(cd $(DIST) && mkdir $$subdir); \
+	done
+	perl -ne 'chomp; symlink "$(SOURCEDIR)/$$_", "$(DIST)/$$_" or \
+			die $$!' MANIFEST
 	tar cfhz $(TARFILE) $(DIST)
 	rm -r $(DIST)
 

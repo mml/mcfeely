@@ -60,9 +60,8 @@ Const.pm
 COPYING
 HOWTO
 INSTALL
-MANIFEST
 README
-DESIGN
-OVERVIEW
-perl-interface.txt
-ttp2.txt
+docs/DESIGN
+docs/OVERVIEW
+docs/perl-interface.txt
+docs/ttp2.txt
