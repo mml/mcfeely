@@ -236,3 +236,8 @@ clean:
 
 print:
 	nenscript -1R $(SOURCES)
+
+createtestdir:
+	-mkdir McFeely
+	cd McFeely && ln -sf ../Job.pm && ln -sf ../Task.pm && \
+		ln -sf ../Metatask.pm
