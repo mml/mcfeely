@@ -60,6 +60,8 @@ install: all PERLDIR
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0755 -d `./topdir`$$i ;\
 	done
 
+	install -o $(MCUSER) -g $(MCGROUP) -m 0700 -d `./topdir`/control/secrets
+
 	install -o $(MCUSER) -g $(QGROUP) -m 4510 mcfeely-queue `./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn mcfeely-ttpc \
@@ -70,6 +72,7 @@ install: all PERLDIR
 	for i in '' /pid /task /info /desc /newj /job /fnot /snot /rep; do \
 		install -o $(MCUSER) -g $(MCGROUP) -m 0750 -d `./topdir`/queue$$i ;\
 	done
+	mkfifo `./topdir`/queue/trigger
 
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0440 McFeely.pm `cat PERLDIR`
 	install -o $(ROOTUSER) -g $(QGROUP) -m 0750 -d `cat PERLDIR`/McFeely
@@ -88,6 +91,8 @@ rpminstall: all PERLDIR
 		install -m 0755 -d $(ROOT)/`./topdir`$$i ;\
 	done
 
+	install -m 0700 -d $(ROOT)/`./topdir`/control/secrets
+
 	install -m 4510 mcfeely-queue $(ROOT)/`./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
@@ -98,6 +103,7 @@ rpminstall: all PERLDIR
 	for i in '' /pid /task /info /desc /newj /job /fnot /snot /rep; do \
 		install -m 0750 -d $(ROOT)/`./topdir`/queue$$i ;\
 	done
+	mkfifo $(ROOT)/`./topdir`/queue/trigger
 
 	# this line because the perl dir won't be there during rpm install
 	install -d $(ROOT)/`cat PERLDIR`
