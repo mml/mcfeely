@@ -62,7 +62,8 @@ install: all PERLDIR
 
 	install -o $(MCUSER) -g $(QGROUP) -m 4510 mcfeely-queue `./topdir`/bin
 
-	for i in mcfeely-manage mcfeely-spawn mcfeely-ttpc mcfeely-ttpd; do \
+	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn mcfeely-ttpc \
+	  mcfeely-ttpd; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 $$i `./topdir`/bin ;\
 	done
 
@@ -78,7 +79,7 @@ install: all PERLDIR
 	done
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
-	  do_selec.tpl jobs.pl read_results.pl tasks.pl; do \
+	  do_select.pl jobs.pl read_results.pl tasks.pl; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0644 $$i `./topdir`/lib/perl; \
 	done
 
@@ -89,7 +90,8 @@ rpminstall: all PERLDIR
 
 	install -m 4510 mcfeely-queue $(ROOT)/`./topdir`/bin
 
-	for i in mcfeely-manage mcfeely-spawn mcfeely-ttpc mcfeely-ttpd; do \
+	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
+	  mcfeely-ttpc mcfeely-ttpd; do \
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
 
@@ -108,7 +110,7 @@ rpminstall: all PERLDIR
 	done
 
 	for i in attempt_tasks.pl const.pl files.pl log.pl safe_to_exit.pl chdir.pl \
-	  do_selec.tpl jobs.pl read_results.pl tasks.pl; do \
+	  do_select.pl jobs.pl read_results.pl tasks.pl; do \
 		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
 	done
 
