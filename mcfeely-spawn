@@ -18,7 +18,6 @@ sub soft { print STDOUT "@_\n"; exit 99 }
 sub launch_ttpc {
 	my $ino = shift;
     chomp $ino;
-    warn "going to launch $ino!\n";
 	my $pid;
 
 	if (!defined ($pid = fork)) {
@@ -39,7 +38,6 @@ sub launch_ttpc {
 
 sub pack_result {
     my %args = @_;
-    warn "going to pack @_!\n";
 
-    return(pack('Lca', $args{slot}, $args{status}, $args{msg}) . "\n");
+    return(pack('Lca*', $args{slot}, $args{status}, $args{msg}) . "\n");
 }
