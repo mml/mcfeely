@@ -136,7 +136,7 @@ rpminstall: all PERLDIR
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
 	  mcfeely-ttpc mcfeely-ttpd snooze secretmaker hostcheck.pl \
-	  serverslam.pl start-logger.pl ; do \
+	  serverslam.pl ; do \
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
 
