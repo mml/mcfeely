@@ -57,3 +57,12 @@ hostcheck.pl
 serverslam.pl
 Log.pm
 Const.pm
+COPYING
+HOWTO
+INSTALL
+MANIFEST
+README
+DESIGN
+OVERVIEW
+perl-interface.txt
+ttp2.txt

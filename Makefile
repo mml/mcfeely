@@ -69,6 +69,7 @@ RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm \
 SRPMFILE	= $(RPMDIR)/SRPMS/$(DIST)-1.src.rpm
 FTPLOC		= sysftp.kiva.net:~ftp/pub/kiva
 WWWLOC		= www.systhug.com:~systhug/www/mcfeely
+DOCDIR		= $(ROOT)/docs
 
 .PHONY: all install rpminstall dist rpm ftp clean
 .INTERMEDIATE: $(SPECFILE) PERLDIR make-internal-pm make-chdir-pl
@@ -149,6 +150,13 @@ rpminstall: all PERLDIR
 	for i in attempt_tasks.pl files.pl safe_to_exit.pl \
 		chdir.pl jobs.pl read_results.pl tasks.pl; do \
 		install -m 0644 $$i $(ROOT)/`./topdir`/lib/perl; \
+	done
+
+	install -d $(DOCDIR)
+
+	for i in COPYING HOWTO INSTALL MANIFEST README docs/DESIGN \
+		docs/OVERVIEW docs/perl-interface.txt docs/ttp2.txt ; do \
+        install -m 0644 $$i $(DOCDIR) ; \
 	done
 
 dist: $(TARFILE)

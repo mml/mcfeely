@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18 2000/07/18 05:23:10 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.1 2000/07/18 22:12:19 jeremy Exp $
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -27,7 +27,7 @@ Copyright: GPL
 Group: Daemons
 Source: mcfeely-@version@.tar.gz
 BuildRoot: /tmp/mcfeely-build-@version@
-Packager: Matt Liggett <mml@pobox.com>
+Packager: Jeremy Fischer <jeremy@pobox.com>
 Vendor: Kiva Networking
 %description
 @BLURB@
@@ -68,7 +68,21 @@ make
 %install
 make ROOT="$RPM_BUILD_ROOT" rpminstall
 
+%post
+%triggerin -- netkit-base inetd
+# Update /etc/inetd.conf
+if ! grep -q '[# \t]*mcfeely' /etc/inetd.conf ; then
+        echo >> /etc/inetd.conf
+        echo ttp2  stream tcp  nowait.100  root  /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd  >> /etc/inetd.conf
+        if [ -f /var/run/inetd.pid ] ; then
+                kill -HUP `cat /var/run/inetd.pid`
+        fi
+fi
+
+
 %files common
+%doc COPYING HOWTO INSTALL MANIFEST README docs/DESIGN docs/OVERVIEW 
+%doc docs/perl-interface.txt docs/ttp2.txt
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/bin
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/control
