@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.18.2.9 2000/07/27 23:44:58 jeremy Exp $
+# $Id: mcfeely.spec.in,v 1.18.2.10 2000/07/27 23:53:05 jeremy Exp $
 # vi:noet
 
 # mcfeely        Asynchronous remote task execution.
@@ -127,7 +127,7 @@ if [ "$1" = 0 ] ; then
         # remove ttp2 from /etc/services if it is there
         if [ -f /etc/services ] &&
         grep -q '^ttp2' /etc/services >/dev/null 2>&1 ; then
-                if grep -v ttp2 /etc/services.conf > /tmp/services.$$ ; then
+                if grep -v ttp2 /etc/services > /tmp/services.$$ ; then
                         mv /tmp/services.$$ /etc/services
                 fi
         fi
