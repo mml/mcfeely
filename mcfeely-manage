@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# vi:ts=4:sw=4:sm:ai:et:
+# vi:ts=4:sw=4:sm:ai:et:wm=0
 
 # mcfeely        Asynchronous remote task execution.
 # Copyright (C) 1999 Kiva Networking
@@ -33,6 +33,7 @@ use POSIX qw(:sys_wait_h);
 
 
 $SIG{CHLD} = \&reaper;
+$SIG{TERM} = \&killer;
 
 use vars qw( $Asked_to_exit $Tasks_in_progress @Tasks %Task %Job
              $rout $rin $srr $siw $select $Srr_readbuffer);
@@ -72,29 +73,45 @@ plog("starting");
 
 scan_job('job', 0);
 
+# loop forever
 until ($Asked_to_exit && safe_to_exit() ) {
-    scan_job('newj', 1);
-    attempt_tasks();
+    # if we've been asked to exit we don't want
+    # to try any new tasks
+    unless ($Asked_to_exit) {
+        scan_job('newj', 1);
+        attempt_tasks();
+    }
     do_select();
     read_results();
 }
 
 plog("exiting");
+exit 0;
+
+# we've been asked to exit with a TERM signal
+sub killer {
+    plog("mcfeely-manage has been asked to exit with a TERM");
+    plog("waiting on mcfeely-spawn to return results for tasks in progress");
+    if (defined($Tasks_in_progress)) {
+        plog("Tasks in progress: $Tasks_in_progress");
+    }
+    $Asked_to_exit = 1;
+    # now we return to the main loop and loop until we are cleaned up
+}
 
 # we've lost the spawner, that's not supposed to 
-# happen
-# XXX: if this happens mcfeely is going to quit and supervise
-# XXX: we'll start it back up again. we don't want that. 
-# XXX: perhaps just run without supervise? or supervise -o
+# happen unless we've been asked to exit
 sub reaper  {
     my $kid;
     $kid = waitpid($pid, WNOHANG);
     if ($kid == $pid) {
-        plog("mcfeely-spawn has died for unknown reasons");
-        plog("queue status unreliable");
-        plog("Tasks in progress: $Tasks_in_progress");
-        $Tasks_in_progress = 0;
-        $Asked_to_exit = 1;
+        unless ($Asked_to_exit == 1) {
+            plog("mcfeely-spawn has died for unknown reasons");
+            plog("queue status unreliable");
+            plog("Tasks in progress: $Tasks_in_progress");
+            $Tasks_in_progress = 0;
+            $Asked_to_exit = 1;
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-# $Id: mcfeely.spec.in,v 1.21 2000/07/28 04:46:19 cdent Exp $
+# $Id: mcfeely.spec.in,v 1.21.2.1 2000/08/03 08:18:09 cdent Exp $
 # vi:noet
 
 # mcfeely        Asynchronous remote task execution.
@@ -28,6 +28,7 @@ Copyright: GPL
 Group: Daemons
 Source0: mcfeely-@version@.tar.gz
 Source1: mcfeely.init
+Source2: mcfeely.logrotate
 BuildRoot: /tmp/mcfeely-build-@version@
 Packager: Jeremy Fischer <jeremy@pobox.com>
 Vendor: Kiva Networking
@@ -45,7 +46,7 @@ Files common to mcfeely-client and mcfeely-server.
 %package server
 Summary: asynchronous task execution on multiple hosts -- server
 Group: Daemons
-Requires: mcfeely-common
+Requires: mcfeely-common sysklogd logrotate
 
 %description server
 @BLURB@
@@ -70,9 +71,13 @@ make
 
 %install
 make ROOT="$RPM_BUILD_ROOT" rpminstall
-mkdir -p $RPM_BUILD_ROOT/var/log/mcfeely $RPM_BUILD_ROOT/etc/rc.d/init.d
+mkdir -p $RPM_BUILD_ROOT/var/log/mcfeely \
+         $RPM_BUILD_ROOT/etc/rc.d/init.d \
+		 $RPM_BUILD_ROOT/etc/logrotate.d
 install -m755 $RPM_SOURCE_DIR/mcfeely.init \
       $RPM_BUILD_ROOT/etc/rc.d/init.d/mcfeely
+install -m644 $RPM_SOURCE_DIR/mcfeely.logrotate \
+	  $RPM_BUILD_ROOT/etc/logrotate.d/mcfeely
 
 %post client
 # Update /etc/inetd.conf
@@ -174,6 +179,7 @@ fi
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-qread
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-qwatch
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-manage
+%attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-logger
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-spawn
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/mcfeely-ttpc
 %attr(- @ROOTUSER@ @MCGROUP@)      @TOPDIR@/bin/secretmaker
@@ -194,6 +200,7 @@ fi
 %attr(- @MCUSER@   @MCGROUP@)      @TOPDIR@/queue/trigger
 %attr(700 @MCUSER@ @MCGROUP@) %dir /var/log/mcfeely
 %attr(- @ROOTUSER@ @MCGROUP@) %config /etc/rc.d/init.d/mcfeely
+%attr(- @ROOTUSER@ @MCGROUP@) %config /etc/logrotate.d/mcfeely
 
 %files client
 %attr(- @ROOTUSER@ @MCGROUP@) %dir @TOPDIR@/comm

@@ -19,6 +19,7 @@ hostport.h
 jobs.pl
 make-mcfeely-pm.c
 mcfeely-manage
+mcfeely-logger
 mcfeely-qread
 mcfeely-queue.8
 mcfeely-queue.c
@@ -68,3 +69,4 @@ docs/OVERVIEW
 docs/perl-interface.txt
 docs/ttp2.txt
 mcfeely.init
+mcfeely.logrotate

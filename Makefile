@@ -65,6 +65,7 @@ EVERYTHING	= $(shell cat MANIFEST)
 DIST		= $(PROJECT)-$(VERSION)
 TARFILE		= $(DIST).tar.gz
 INITFILE	= mcfeely.init
+LOGRFILE	= mcfeely.logrotate
 SPECFILE	= $(PROJECT).spec
 RPMFILE		= $(RPMDIR)/RPMS/i386/$(PROJECT)-common-$(VERSION)-1.i386.rpm \
 			  $(RPMDIR)/RPMS/i386/$(PROJECT)-client-$(VERSION)-1.i386.rpm \
@@ -91,7 +92,7 @@ install: all PERLDIR
 	install -o $(MCUSER) -g $(QGROUP) -m 4510 mcfeely-queue `./topdir`/bin
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
-		mcfeely-ttpc mcfeely-ttpd snooze secretmaker; do \
+		mcfeely-ttpc mcfeely-ttpd snooze secretmaker mcfeely-logger; do \
 		install -o $(ROOTUSER) -g $(MCGROUP) -m 0550 $$i `./topdir`/bin ; \
 	done
 
@@ -136,7 +137,7 @@ rpminstall: all PERLDIR
 
 	for i in mcfeely-start mcfeely-qread mcfeely-manage mcfeely-spawn \
 	  mcfeely-ttpc mcfeely-ttpd snooze secretmaker hostcheck.pl \
-	  serverslam.pl ; do \
+	  serverslam.pl mcfeely-logger ; do \
 		install -m 0550 $$i $(ROOT)/`./topdir`/bin ;\
 	done
 
@@ -193,6 +194,7 @@ $(SRPMFILE): do-rpm
 do-rpm: $(TARFILE) $(SPECFILE)
 	cp $(SPECFILE) $(RPMDIR)/SPECS/
 	cp $(INITFILE) $(RPMDIR)/SOURCES/
+	cp $(LOGRFILE) $(RPMDIR)/SOURCES/
 	cp $(TARFILE) $(RPMDIR)/SOURCES/
 	rpm -ba $(RPMDIR)/SPECS/$(SPECFILE)
 
@@ -223,6 +225,7 @@ test:
 	perl -cw mcfeely-manage
 	perl -cw mcfeely-start
 	perl -cw mcfeely-spawn
+	perl -cw mcfeely-logger
 
 mcfeely-queue: mcfeely-queue.o trigger.o fn.o pid.o copy_to_null.o \
 	copy_bytes.o safe_read.o safe_write.o
