@@ -1,6 +1,10 @@
 mcfeely is (C) 1999 Kiva Networking and is free software under the terms of
 the GNU Public License.  See the file COPYING for further details.
 
+These instructions are for building mcfeely if you are not using
+the RPM.  One you have things installed the HOWTO document,
+although directed  towards the RPM will help explain how to
+configure things.
 
 Put the top-level directory for installation in TOPDIR.
 

@@ -33,6 +33,10 @@ directory at http://web.systhug.com/mcfeely/dist/
 knetstring provides the shared library used by the client and server
 to talk with one another in a reliable fashion.
 
+You will also need to have a version of the perl IO module which 
+supports the blocking() method. IO 1.20 works and is available 
+from CPAN.
+
 Before you install the rpms, create the user and groups which McFeely
 needs to run.
 
@@ -92,25 +96,23 @@ These files should be owned by root and group mcfeely, mode 640.
 Now the mcfeely server and client process need to be run.
 
 The mcfeely server is a continuously running processes so should
-therefore start at boot time and run continuously from there. At this
-time no initscripts are provided. They are in the works. To start
-things run:
+therefore start at boot time and run continuously from there. An
+initscript is provided '/etc/rc.d/init.d/mcfeely' which may be used to
+start the server process. The script provides for syslogging to
+/var/log/mcfeely/mcfeely.log via syslog facility local6.
+
+If you do not which to use the initscript you may simply do:
 
    /opt/mcfeely/bin/mcfeely-start
 
-This program will log to STDERR so you may want to catch that. For 
-testing purposes the following will work (assuming you are using bash
-as your shell):
-
-  /opt/mcfeely/bin/mcfeely-start &> /tmp/mcfeely-serer.log
-
 For the client side you need to run mcfeely-ttpd. mcfeely-ttpd needs
-a friend to help it listen on port 757. Add the following to 
+a friend to help it listen on port 757. The rpms make the necessary
+additions to the /etc/services and /etc/inetd.conf files.
+
 /etc/services:
 
   ttp2            757/tcp                         # mcfeely task transfer
 
-If you wish to run mcfeely-ttpd from inetd add the following to 
 /etc/inetd.conf:
 
   ttp2    stream tcp      nowait.1000  root    /opt/mcfeely/bin/mcfeely-ttpd mcfeely-ttpd 
@@ -124,10 +126,10 @@ qmail fame, see www.qmail.org) instead of inetd:
  /usr/local/bin/tcpserver -v -c8 -u0 -g0 saliva.kiva.net 757 \
    /opt/mcfeely/bin/mcfeely-ttpd  &
 
-mcfeely-ttpd will syslog to the LOG_DAEMON facility.
+mcfeely-ttpd will syslog to the LOG_DAEMON facility, which on most
+redhat installation will put the output into /var/log/messages.
 
-If your mcfeely client is on another machine you must configure
-inetd.conf or tcpserver on the other machine and adjust the
+If your mcfeely client is on another machine you must adjust the
 control/hosts file to include the information about the other host.
 You may have as many mcfeely clients as you like.
 
@@ -135,7 +137,8 @@ You may have as many mcfeely clients as you like.
 Testing
 
 If you are not using tcpserver you can skip this step, but make sure
-inetd is configured:
+inetd is configured and 'tail /var/log/messages|grep mcfeely' to get
+relevant log output.
 
   In one window start up mcfeely-ttpd (the client) with tcpserver (do
   this as root):
@@ -148,7 +151,11 @@ inetd is configured:
 In a window start up mcfeely (the server) by running this
 command (as root):
 
-  /opt/mcfeely/bin/mcfeely-start
+  /etc/rc.d/init.d/mcfeely start
+
+and 
+
+  tail -f /var/log/mcfeely/mcfeely.log
 
 In another window run:
 
@@ -163,8 +170,7 @@ Give your mcfeely client's name as the host and test_comm as the comm:
 
 If everything is working you should recieve a mail message to 'root'
 stating success. The mcfeely-start window will include some logging
-information, as will the mcfeely-ttpd window (if you are using
-tcpserver).
+information, as will the mcfeely-ttpd window.
 
 If that works you can then use the serverslam.pl program to
 _aggressively_ test your mcfeely setup. serverslam.pl can be used to
@@ -174,7 +180,8 @@ client. For example:
    ./serverslamp.pl saliva test_comm 5 5
 
 will inject 5 jobs of up to 5 tasks a piece (each running test_comm)
-to the mcfeely client on saliva.
+to the mcfeely client on saliva. This has been used to inject well 
+over 5000 concurrent tasks.
 
 A 5th and 6th argument let you choose to set the fnot and snot (see
 the McFeely::Job perl documentation) flags if you so choose.

@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# chkconfig: 345 76 45
+# description: mcfeely is a set of programs that automate the
+# asynchronous execution of programs on remote (or local) hosts
+# See docs in /usr/doc/mcfeely-{version}
+#
+
+# Set some variables
+PROG=mcfeely-start
+BIN=/opt/mcfeely/bin
+
+# Source function library.
+. /etc/rc.d/init.d/functions 
+export INITLOG_ARGS="--facility=local6 --priority=debug"
+
+[ -f $BIN/mcfeely-start ] || exit 0
+
+# See how we were called
+case "$1" in
+  start)
+     PATH=/usr/local/bin:/usr/bin:$PATH
+     echo -n "Starting mcfeely: "
+     daemon $BIN/$PROG 2>&1 > /dev/null &
+     touch /var/lock/subsys/$PROG
+    ;;
+  stop)
+     echo -n "Stopping mcfeely: "
+     MANAGEPID=`/sbin/pidof -x mcfeely-manage`
+     kill -15 $MANAGEPID 
+     echo "done"
+     rm -f /var/lock/subsys/$PROG
+    ;;
+  restart)
+     $0 stop
+     $0 start
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart}"
+	exit 1
+esac
+
